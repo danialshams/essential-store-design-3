@@ -44,3 +44,17 @@ test("camera animation runs without Three.js or custom WebGL",()=>{
  assert.match(component,/WebP layers|independent transparent WebP/);
  assert.match(read("src/app/layout.tsx"),/camera-story.css/);
 });
+
+
+test("camera discovery CTA scrubs to disassembly rather than skipping the experience",()=>{
+ assert.match(component,/onClick=\{\(\)=>scrollToProgress\(\.64\)\}/);
+ assert.doesNotMatch(component,/href="#camera-story-end" className="cs-gold-button"/);
+ assert.match(component,/scrollToProgress\(\[\.025,\.35,\.64,\.94\]\[i\]\)/);
+ assert.match(component,/camera-story-end"\)\?\.scrollIntoView/);
+});
+test("next photographic scenes preload and short mobile viewports do not overflow their sticky viewport",()=>{
+ assert.match(component,/macro\.webp.{0,60}loading="eager"/);
+ assert.match(component,/details\.webp.{0,60}loading="eager"/);
+ assert.match(css,/@media \(max-width:760px\) and \(max-height:650px\)/);
+ assert.doesNotMatch(css,/min-height:570px/);
+});

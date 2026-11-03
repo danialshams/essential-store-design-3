@@ -34,6 +34,20 @@ export function CameraScrollHero(){
   const [current,setCurrent]=useState(0);
   const [jsReady,setJsReady]=useState(false);
 
+  // Keep the CTA and progress markers synchronized with the scrubbed timeline.
+  // Reduced-motion visitors go directly to the static end section.
+  const scrollToProgress=(progress:number)=>{
+    const stage=container.current;
+    if(!stage)return;
+    if(window.matchMedia("(prefers-reduced-motion: reduce)").matches){
+      document.getElementById("camera-story-end")?.scrollIntoView({behavior:"auto"});
+      return;
+    }
+    const available=Math.max(0,stage.offsetHeight-window.innerHeight);
+    const top=stage.getBoundingClientRect().top+window.scrollY;
+    window.scrollTo({top:top+available*Math.max(0,Math.min(1,progress)),behavior:"smooth"});
+  };
+
   useEffect(()=>{
     if(!container.current)return;
     const media=window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -116,7 +130,7 @@ export function CameraScrollHero(){
       <div className="cs-viewport" data-cs-viewport>
         <div className="cs-grain" aria-hidden="true"/>
         <div className="cs-photo" data-cs-scene="intro" aria-hidden="true"><Image src={`${base}/intro.webp`} alt="" fill priority sizes="100vw" unoptimized/></div>
-        <div className="cs-photo" data-cs-scene="macro" aria-hidden="true"><Image src={`${base}/macro.webp`} alt="" fill sizes="100vw" unoptimized/></div>
+        <div className="cs-photo" data-cs-scene="macro" aria-hidden="true"><Image src={`${base}/macro.webp`} alt="" fill loading="eager" sizes="100vw" unoptimized/></div>
         <div className="cs-photo cs-explosion-photo" data-cs-scene="explode" aria-hidden="true">
           <div className="cs-explosion-shine"/>
           <div className="cs-explosion-parts">{parts.map(part=><img
@@ -125,7 +139,7 @@ export function CameraScrollHero(){
           />)}</div>
           <div className="cs-explosion-floor"/>
         </div>
-        <div className="cs-photo" data-cs-scene="details" aria-hidden="true"><Image src={`${base}/details.webp`} alt="" fill sizes="100vw" unoptimized/></div>
+        <div className="cs-photo" data-cs-scene="details" aria-hidden="true"><Image src={`${base}/details.webp`} alt="" fill loading="eager" sizes="100vw" unoptimized/></div>
         <div className="cs-vignette" aria-hidden="true"/>
         <header className="cs-header" aria-label="ناوبری نمونه دوربین">
           <Link className="cs-identity" href="/" aria-label="بازگشت به صفحه اول"><Aperture size={21} strokeWidth={1.4}/><span>NOIR <b>/</b> OPTICS</span></Link>
@@ -138,7 +152,7 @@ export function CameraScrollHero(){
             <div className="cs-eyebrow"><span>{step.id}</span><i/><b>{step.label}</b></div>
             <h1 className={i===0?"cs-main-title":"cs-title"}>{step.title.split("\n").map((line,j)=><span key={j}>{line}</span>)}</h1>
             <p>{step.description}</p>
-            {i===0&&<div className="cs-intro-actions"><a href="#camera-story-end" className="cs-gold-button">کشف اجزای دوربین <ArrowDown size={17}/></a><span>SCROLL TO EXPLORE</span></div>}
+            {i===0&&<div className="cs-intro-actions"><button type="button" onClick={()=>scrollToProgress(.64)} className="cs-gold-button">کشف اجزای دوربین <ArrowDown size={17}/></button><span>SCROLL TO EXPLORE</span></div>}
             {i===2&&<div className="cs-part-legend"><span>01 / لنز</span><span>02 / حسگر</span><span>03 / پردازشگر</span></div>}
             {i===3&&<Link className="cs-gold-button" href="/products">ورود به فروشگاه <ArrowLeft size={17}/></Link>}
           </div>)}
@@ -148,11 +162,7 @@ export function CameraScrollHero(){
           <div className="cs-callout cs-callout-lens" data-cs-callout><i/><strong>02 / سامانه اپتیکی</strong><span>کنترل وضوح، کنتراست و عمق میدان</span></div>
         </div>
         <div className="cs-side-steps" aria-label="مرحله نمایش">
-          {steps.map((step,i)=><button key={step.id} type="button" className={current===i?"is-current":""} aria-label={`رفتن به مرحله ${step.id}`} aria-current={current===i?"step":undefined} onClick={()=>{
-            const el=container.current;if(!el)return;
-            const amount=el.offsetHeight-window.innerHeight;
-            window.scrollTo({top:el.getBoundingClientRect().top+window.scrollY+Math.max(0,amount)*[.025,.35,.64,.94][i],behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
-          }}><span/><em>{step.id}</em></button>)}
+          {steps.map((step,i)=><button key={step.id} type="button" className={current===i?"is-current":""} aria-label={`رفتن به مرحله ${step.id}`} aria-current={current===i?"step":undefined} onClick={()=>scrollToProgress([.025,.35,.64,.94][i])}><span/><em>{step.id}</em></button>)}
           <div className="cs-steps-track"><span data-cs-progress/></div>
         </div>
         <div className="cs-bottom" dir="ltr"><span>DESIGNED TO BE DISCOVERED</span><div><span className="cs-scroll-indicator"/> SCROLL TO EXPLORE</div><span>NOIR OPTICS © 2026</span></div>
