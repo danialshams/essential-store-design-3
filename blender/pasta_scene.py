@@ -23,22 +23,22 @@ bpy.ops.object.delete(use_global=False)
 scene = bpy.context.scene
 scene.render.engine = "CYCLES"
 scene.cycles.device = "CPU"
-scene.cycles.samples = 12
+scene.cycles.samples = 14
 scene.cycles.use_denoising = False
 # Ubuntu packaged Blender can be compiled without OpenImageDenoiser.
 # Disable per-view-layer denoising as well for portability.
 if hasattr(bpy.context.view_layer, "cycles"):
     bpy.context.view_layer.cycles.use_denoising = False
-scene.render.resolution_x = 720
-scene.render.resolution_y = 432
+scene.render.resolution_x = 800
+scene.render.resolution_y = 480
 scene.render.resolution_percentage = 100
 scene.render.image_settings.file_format = "PNG"
 scene.render.image_settings.color_mode = "RGBA"
 scene.render.film_transparent = False
 scene.view_settings.view_transform = "AgX" if "AgX" in bpy.types.ColorManagedViewSettings.bl_rna.properties["view_transform"].enum_items.keys() else "Filmic"
 scene.frame_start = 1
-scene.frame_end = 24
-scene.render.fps = 12
+scene.frame_end = 72
+scene.render.fps = 18
 
 world = bpy.data.worlds.new("Warm restaurant atmosphere")
 scene.world = world
@@ -123,10 +123,15 @@ plane("Restaurant table", (15,15,1), table_mat, -.04)
 
 # Group ingredient geometry into physically independent animated 3D parents.
 groups={}
+# All ingredient geometry first lifts together out of the bowl. Ingredients then
+# separate one by one into a clean vertical stack, never morphing or dissolving.
+assembly=bpy.data.objects.new("WHOLE PASTA FLOATING ASSEMBLY",None)
+bpy.context.collection.objects.link(assembly)
 for name in ["spaghetti","sauce","cheese","tomatoes","basil"]:
     g=bpy.data.objects.new("Ingredient group | "+name,None)
     bpy.context.collection.objects.link(g)
     groups[name]=g
+    g.parent=assembly
 
 def tube(name, coords, radius, mat, parent):
     cr=bpy.data.curves.new(name+" geometry","CURVE")
@@ -243,37 +248,69 @@ def key(g,frame,xyz,rotation=(0,0,0)):
     g.keyframe_insert(data_path="location",frame=frame)
     g.keyframe_insert(data_path="rotation_euler",frame=frame)
 
+# The food starts assembled. At frames 8-25 the entire food stack gently
+# floats off the plate. Then each layer rises IN SEQUENCE, remaining centred.
+# This is a continuous three-dimensional movement through 72 unique frames.
+assembly.location=(0,0,0)
+assembly.keyframe_insert(data_path="location",frame=1)
+assembly.keyframe_insert(data_path="location",frame=8)
+assembly.location=(0,0,.77)
+assembly.keyframe_insert(data_path="location",frame=27)
+assembly.keyframe_insert(data_path="location",frame=72)
+for g in groups.values():
+    g.location=(0,0,0)
+    g.rotation_euler=(0,0,0)
+    g.keyframe_insert(data_path="location",frame=1)
+    g.keyframe_insert(data_path="rotation_euler",frame=1)
 offsets={
-    "spaghetti":(-.12,-.17,.94),
-    "sauce":(.33,.2,1.6),
-    "cheese":(-.24,.1,2.34),
-    "tomatoes":(.43,-.18,2.96),
-    "basil":(-.25,.15,3.52),
+    "spaghetti":(0,0,0),
+    "sauce":(.035,.015,.62),
+    "cheese":(-.035,-.025,1.30),
+    "tomatoes":(.055,0,1.98),
+    "basil":(-.03,.025,2.66),
+}
+times={
+    "spaghetti":(1,72),
+    "sauce":(26,45),
+    "cheese":(36,54),
+    "tomatoes":(45,63),
+    "basil":(54,69),
 }
 for name,g in groups.items():
+    first,last=times[name]
     dest=offsets[name]
-    key(g,1,(0,0,0))
-    key(g,6,(0,0,0))
-    key(g,20,dest,(.08,-.08,.07))
-    key(g,24,dest,(.08,-.08,.07))
+    if first>1:
+        key(g,first,(0,0,0))
+    key(g,last,dest,(
+        .018 if name=="cheese" else 0,
+        -.020 if name=="sauce" else 0,
+        .035 if name=="tomatoes" else 0))
+    key(g,72,dest,(
+        .018 if name=="cheese" else 0,
+        -.020 if name=="sauce" else 0,
+        .035 if name=="tomatoes" else 0))
+for g in list(groups.values())+[assembly]:
     if g.animation_data:
-        for fcurve in g.animation_data.action.fcurves:
-            for k in fcurve.keyframe_points: k.interpolation="BEZIER"
+        for fc in g.animation_data.action.fcurves:
+            for kp in fc.keyframe_points:
+                kp.interpolation="BEZIER"
+                kp.handle_left_type="AUTO_CLAMPED"
+                kp.handle_right_type="AUTO_CLAMPED"
 
 def aim(ob,target):
     direction=Vector(target)-ob.location
     ob.rotation_euler=direction.to_track_quat("-Z","Y").to_euler()
 
-bpy.ops.object.camera_add(location=(3.4,-6.4,3.35))
+# A deliberately steady cinematic camera: food rises and layers move, while
+# its lighting, shape and 3D continuity stay stable from frame to frame.
+bpy.ops.object.camera_add(location=(4.0,-8.5,4.65))
 cam=bpy.context.object
-cam.name="Cinematic dolly camera"
+cam.name="Stable food advertisement camera"
 scene.camera=cam
-cam.data.lens=48
+cam.data.lens=40
 for frame,loc,target in [
-    (1,(3.4,-6.4,3.35),(0,0,.40)),
-    (6,(3.3,-6.0,3.20),(0,0,.54)),
-    (20,(3.95,-7.1,4.4),(0,0,1.70)),
-    (24,(3.95,-7.1,4.4),(0,0,1.70)),
+    (1,(4.0,-8.5,4.65),(0,0,1.56)),
+    (72,(3.90,-8.35,4.64),(0,0,1.61)),
 ]:
     cam.location=loc
     aim(cam,target)
@@ -294,18 +331,18 @@ area("Warm softbox key",(-3,-2,6),1100,5,(1.0,.77,.52))
 area("Cool editorial fill",(4,-1,3),450,4,(.65,.78,1.0))
 area("Warm rim",(0,4,5),1600,3,(1.0,.64,.36))
 
-scene.camera.data.dof.use_dof=True
+scene.camera.data.dof.use_dof=False
 scene.camera.data.dof.focus_distance=7.5
 scene.camera.data.dof.aperture_fstop=5.6
 scene.render.filepath=os.path.join(out_dir,"frame-")
 bpy.ops.wm.save_as_mainfile(filepath=os.path.join(out_dir,"pasta-proof.blend"))
 
 with open(os.path.join(out_dir,"manifest.json"),"w",encoding="utf-8") as f:
-    json.dump({"renderer":"Blender Cycles CPU","frames":24,"fps":12,
-               "resolution":"720x432",
-               "purpose":"Proof of actual 3D geometry and animated separated ingredients",
-               "quality":"procedural prototype, NOT final photorealistic food CG",
+    json.dump({"renderer":"Blender Cycles CPU","frames":72,"fps":18,
+               "resolution":"800x480",
+               "purpose":"Continuous video: whole spaghetti rises off the plate, then sauce, cheese, tomatoes and basil rise sequentially into vertically stacked layers",
+               "quality":"simple true 3D animation, NOT photorealistic or a sequence of still photographs",
                "layers":list(groups)},f,ensure_ascii=False,indent=2)
-print("RENDER START: 24 frames of actual Blender geometry")
+print("RENDER START: 72 frames of genuine, continuous 3D ingredient animation")
 bpy.ops.render.render(animation=True)
 print("RENDER COMPLETE")
