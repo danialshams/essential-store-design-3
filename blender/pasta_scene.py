@@ -24,7 +24,11 @@ scene = bpy.context.scene
 scene.render.engine = "CYCLES"
 scene.cycles.device = "CPU"
 scene.cycles.samples = 12
-scene.cycles.use_denoising = True
+scene.cycles.use_denoising = False
+# Ubuntu packaged Blender can be compiled without OpenImageDenoiser.
+# Disable per-view-layer denoising as well for portability.
+if hasattr(bpy.context.view_layer, "cycles"):
+    bpy.context.view_layer.cycles.use_denoising = False
 scene.render.resolution_x = 720
 scene.render.resolution_y = 432
 scene.render.resolution_percentage = 100
