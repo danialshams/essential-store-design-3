@@ -41,7 +41,7 @@ jobs:
                 matches=re.findall(r'.{0,160}(?:\.glb|assetUrl|downloadUrl|fileUrl|cdn\.|plate-of-pasta).{0,180}',data,re.I)
                 print("asset tokens",len(matches))
                 for m in matches[:30]:print(html.unescape(m).replace('\\/','/')[:380])
-                hrefs=re.findall(r'(?:href|src)=["\\']([^"\\']+)["\\']',data)
+                hrefs=re.findall(r'(?:href|src)="([^"]+)"',data)
                 print("interesting hrefs",[h for h in hrefs if any(t in h.lower() for t in ['.glb','download','assets','models'])][:20])
             except Exception as e: print("ERROR",repr(e))
           PY
