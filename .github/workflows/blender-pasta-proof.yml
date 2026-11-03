@@ -38,8 +38,11 @@ jobs:
           test -n "$expected" && test "$expected" = "$actual"
           tar -xJf /tmp/blender-linux.tar.xz -C /tmp
           echo "/tmp/blender-4.5.15-linux-x64" >> "$GITHUB_PATH"
-          /tmp/blender-4.5.15-linux-x64/blender --version
-          command -v ffmpeg
+          /tmp/blender-4.5.15-linux-x64/blender --version || true
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
           ffmpeg -version
 
       - name: Render 3D scene and animated ingredient separation
