@@ -1,9 +1,9 @@
-name: Blender Pasta — Real 3D Render Proof
+name: Blender — Pasta rises and ingredients stack vertically
 
 on:
   push:
     branches:
-      - experiment/blender-pasta-proof-20261103
+      - experiment/pasta-vertical-stack-video-20261103
     paths:
       - ".github/workflows/blender-pasta-proof.yml"
       - "blender/**"
@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: blender-pasta-proof
+  group: pasta-stack-animation
   cancel-in-progress: true
 
 jobs:
@@ -55,10 +55,10 @@ jobs:
       - name: Encode a playable preview from the rendered frames
         run: |
           ffmpeg -hide_banner -loglevel error -y \
-            -framerate 12 -pattern_type glob -i 'output/pasta/frame-*.png' \
+            -framerate 18 -pattern_type glob -i 'output/pasta/frame-*.png' \
             -c:v libx264 -preset medium -crf 20 \
             -pix_fmt yuv420p -movflags +faststart \
-            output/pasta/real-blender-pasta-preview.mp4
+            output/pasta/pasta-rises-ingredient-stack.mp4
 
       - name: Verify Blender project, image frames and MP4
         run: |
@@ -67,7 +67,7 @@ jobs:
           import json
           root = Path("output/pasta")
           frames = sorted(root.glob("frame-*.png"))
-          assert len(frames) == 24, f"Expected 24 REAL Blender-rendered frames, found {len(frames)}"
+          assert len(frames) == 72, f"Expected 72 REAL Blender-rendered frames, found {len(frames)}"
           assert (root / "pasta-proof.blend").stat().st_size > 10000
           assert (root / "real-blender-pasta-preview.mp4").stat().st_size > 10000
           assert (root / "manifest.json").exists()
@@ -77,7 +77,7 @@ jobs:
       - name: Upload actual Blender project and rendered media
         uses: actions/upload-artifact@v4
         with:
-          name: pasta-real-3d-proof
+          name: pasta-vertical-stack-video
           path: output/pasta/
           retention-days: 7
           compression-level: 0
