@@ -76,12 +76,13 @@ jobs:
           frames = sorted(root.glob("frame-*.png"))
           assert len(frames) == 72, f"Expected 72 REAL Blender-rendered frames, found {len(frames)}"
           assert (root / "pasta-proof.blend").stat().st_size > 10000
-          assert (root / "real-blender-pasta-preview.mp4").stat().st_size > 10000
+          assert (root / "pasta-rises-ingredient-stack.mp4").stat().st_size > 10000
           assert (root / "manifest.json").exists()
           print(json.dumps({"rendered_frames":len(frames),"first":frames[0].name,"last":frames[-1].name},indent=2))
           PY
 
       - name: Upload actual Blender project and rendered media
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: pasta-vertical-stack-video
