@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>The Art of Pasta</title>
+  <meta name="description" content="A cinematic scroll-driven pasta story built from a single uploaded video." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #10100f;
+      --panel: rgba(255,255,255,0.06);
+      --panel-border: rgba(255,255,255,0.12);
+      --text: #f3ede2;
+      --muted: rgba(243,237,226,0.68);
+      --gold: #c7a46a;
+      --warm: #e4cab0;
+      --shadow: 0 30px 100px rgba(0,0,0,.55);
+      --pad: clamp(20px, 2.6vw, 40px);
+      --radius: 28px;
+      --progress: 0;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 50% 8%, rgba(199,164,106,.18), transparent 28%),
+        radial-gradient(circle at 50% 120%, rgba(199,164,106,.06), transparent 40%),
+        var(--bg);
+      color: var(--text);
+      font-family: Inter, system-ui, sans-serif;
+      overflow-x: clip;
+    }
+    a { color: inherit; }
+
+    .topbar {
+      position: fixed;
+      inset: 0 0 auto 0;
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: max(env(safe-area-inset-top), 12px) var(--pad) 12px;
+      pointer-events: none;
+      mix-blend-mode: normal;
+    }
+    .brand,
+    .meta-chip {
+      pointer-events: auto;
+      backdrop-filter: blur(16px);
+      background: rgba(16,16,15,.4);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-size: 12px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: rgba(243,237,226,.82);
+    }
+    .brand strong { color: var(--gold); font-weight: 700; }
+
+    .hero,
+    .outro {
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
+      padding: calc(96px + env(safe-area-inset-top)) var(--pad) max(40px, env(safe-area-inset-bottom));
+      position: relative;
+    }
+
+    .hero-card,
+    .outro-card {
+      width: min(1120px, 100%);
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: clamp(24px, 4vw, 70px);
+      align-items: center;
+    }
+    .eyebrow {
+      font-size: 12px;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: rgba(243,237,226,.56);
+      margin-bottom: 20px;
+    }
+    h1,h2,h3 { margin: 0; }
+    .title,
+    .outro-title {
+      font-family: "Instrument Serif", Georgia, serif;
+      font-weight: 400;
+      line-height: .94;
+      letter-spacing: -.03em;
+      font-size: clamp(56px, 10vw, 132px);
+      max-width: 8ch;
+    }
+    .lede,
+    .outro-copy {
+      margin-top: 18px;
+      font-size: clamp(16px, 1.6vw, 20px);
+      line-height: 1.8;
+      color: var(--muted);
+      max-width: 38ch;
+    }
+    .hero-actions,
+    .outro-actions {
+      margin-top: 28px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .button,
+    .button-secondary {
+      border: 0;
+      border-radius: 999px;
+      padding: 14px 22px;
+      font: inherit;
+      cursor: pointer;
+      transition: transform .25s ease, background .25s ease, border-color .25s ease;
+    }
+    .button {
+      background: var(--gold);
+      color: #181613;
+      font-weight: 700;
+    }
+    .button-secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,.14);
+      backdrop-filter: blur(14px);
+    }
+    .button:hover,
+    .button-secondary:hover { transform: translateY(-2px); }
+
+    .poster-shell {
+      width: min(360px, 78vw);
+      aspect-ratio: 352 / 608;
+      border-radius: 26px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255,255,255,.1);
+      justify-self: center;
+      background: #140f0a;
+    }
+    .poster-shell::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      height: 34%;
+      background: linear-gradient(to top, rgba(16,16,15,.88), transparent);
+      pointer-events: none;
+    }
+    .poster-shell img,
+    .poster-shell video { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .experience {
+      position: relative;
+      height: 620vh;
+    }
+    .sticky-stage {
+      position: sticky;
+      top: 0;
+      height: 100svh;
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+      isolation: isolate;
+      background:
+        radial-gradient(circle at 50% 18%, rgba(199,164,106,.1), transparent 28%),
+        linear-gradient(to bottom, rgba(255,255,255,.02), rgba(255,255,255,0) 24%),
+        var(--bg);
+    }
+    .sticky-stage::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,.22), transparent 22%, transparent 78%, rgba(0,0,0,.35));
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .stage-grid {
+      width: min(1320px, 100%);
+      min-height: 100%;
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) minmax(300px, 400px) minmax(260px, 1fr);
+      align-items: center;
+      gap: clamp(18px, 2vw, 36px);
+      padding: calc(86px + env(safe-area-inset-top)) var(--pad) max(30px, env(safe-area-inset-bottom));
+      z-index: 1;
+    }
+    .stage-copy { align-self: center; }
+    .stage-tag {
+      color: rgba(243,237,226,.56);
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+    .stage-title {
+      font-family: "Instrument Serif", Georgia, serif;
+      font-weight: 400;
+      letter-spacing: -.03em;
+      line-height: .95;
+      font-size: clamp(34px, 5vw, 72px);
+      max-width: 8ch;
+    }
+    .stage-description {
+      margin-top: 16px;
+      color: var(--muted);
+      line-height: 1.8;
+      max-width: 34ch;
+      font-size: clamp(15px, 1.1vw, 18px);
+    }
+    .progress-wrap {
+      margin-top: 28px;
+      max-width: 320px;
+    }
+    .progress-track {
+      height: 2px;
+      width: 100%;
+      background: rgba(255,255,255,.1);
+      overflow: hidden;
+      position: relative;
+    }
+    .progress-bar {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: calc(var(--progress) * 100%);
+      background: linear-gradient(90deg, rgba(199,164,106,.15), var(--gold));
+    }
+    .progress-label {
+      margin-top: 14px;
+      color: rgba(243,237,226,.55);
+      font-size: 12px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+
+    .video-column {
+      position: relative;
+      display: grid;
+      place-items: center;
+      justify-self: center;
+      width: 100%;
+    }
+    .video-shell {
+      width: min(100%, 380px);
+      aspect-ratio: 352 / 608;
+      position: relative;
+      border-radius: 28px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.12);
+      box-shadow: var(--shadow);
+      background: #0b0908;
+    }
+    .video-shell::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(6,6,6,.3), rgba(255,255,255,.03));
+      z-index: 1;
+      pointer-events: none;
+    }
+    .video-shell::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      height: 20%;
+      background: linear-gradient(to top, rgba(8,6,4,.48), transparent);
+      z-index: 1;
+      pointer-events: none;
+    }
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      background: #120f0b;
+    }
+    .loading {
+      position: absolute;
+      inset: auto 12px 12px 12px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 14px;
+      z-index: 4;
+      background: rgba(8,8,8,.52);
+      backdrop-filter: blur(16px);
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.1);
+      font-size: 12px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: rgba(243,237,226,.82);
+      transition: opacity .3s ease, transform .3s ease;
+    }
+    .loading.hidden { opacity: 0; transform: translateY(10px); pointer-events: none; }
+    .spinner {
+      width: 13px;
+      height: 13px;
+      border-radius: 999px;
+      border: 2px solid rgba(243,237,226,.28);
+      border-top-color: var(--gold);
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .callouts {
+      position: relative;
+      min-height: min(78vh, 710px);
+    }
+    .callout {
+      position: absolute;
+      left: 0;
+      right: 0;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 14px;
+      align-items: center;
+      opacity: .15;
+      transform: translateX(14px);
+      transition: opacity .38s ease, transform .38s ease, color .38s ease;
+    }
+    .callout::before {
+      content: "";
+      width: 22px;
+      height: 1px;
+      background: rgba(255,255,255,.2);
+      transform-origin: left center;
+      transition: background .38s ease, transform .38s ease;
+    }
+    .callout.visible {
+      opacity: .54;
+      transform: translateX(0);
+    }
+    .callout.active {
+      opacity: 1;
+    }
+    .callout.active::before {
+      background: var(--gold);
+      transform: scaleX(1.35);
+    }
+    .callout:nth-child(1) { top: 8%; }
+    .callout:nth-child(2) { top: 23%; }
+    .callout:nth-child(3) { top: 39%; }
+    .callout:nth-child(4) { top: 55%; }
+    .callout:nth-child(5) { top: 72%; }
+    .callout h3 {
+      font-size: clamp(18px, 1.6vw, 24px);
+      margin-bottom: 6px;
+      color: var(--text);
+      font-weight: 600;
+    }
+    .callout p {
+      margin: 0;
+      color: rgba(243,237,226,.62);
+      line-height: 1.65;
+      font-size: 14px;
+      max-width: 28ch;
+    }
+
+    .mobile-ingredient {
+      display: none;
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      bottom: 14px;
+      z-index: 6;
+      padding: 16px 16px 18px;
+      border-radius: 18px;
+      backdrop-filter: blur(16px);
+      background: rgba(10,10,10,.46);
+      border: 1px solid rgba(255,255,255,.12);
+      box-shadow: 0 18px 40px rgba(0,0,0,.24);
+      transition: opacity .3s ease, transform .3s ease;
+    }
+    .mobile-ingredient .mobile-tag {
+      color: rgba(243,237,226,.55);
+      text-transform: uppercase;
+      letter-spacing: .18em;
+      font-size: 10px;
+      margin-bottom: 8px;
+    }
+    .mobile-ingredient h3 {
+      font-size: 22px;
+      margin-bottom: 6px;
+    }
+    .mobile-ingredient p {
+      margin: 0;
+      color: rgba(243,237,226,.68);
+      line-height: 1.65;
+      font-size: 14px;
+    }
+
+    .scroll-hint {
+      position: absolute;
+      inset: auto 50% 26px auto;
+      transform: translateX(50%);
+      font-size: 11px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: rgba(243,237,226,.5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      pointer-events: none;
+      opacity: calc(1 - min(var(--progress) * 4, 1));
+      transition: opacity .25s ease;
+    }
+    .scroll-hint::before {
+      content: "";
+      width: 1px;
+      height: 40px;
+      background: linear-gradient(to bottom, rgba(255,255,255,.6), transparent);
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { transform: scaleY(.55); opacity: .45; }
+      50% { transform: scaleY(1); opacity: 1; }
+    }
+
+    .caption-stack {
+      margin-top: 26px;
+      display: grid;
+      gap: 16px;
+    }
+    .caption-item {
+      display: grid;
+      grid-template-columns: 20px 1fr;
+      gap: 12px;
+      align-items: start;
+      color: rgba(243,237,226,.65);
+      transition: color .35s ease, transform .35s ease;
+    }
+    .caption-item .bullet {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.24);
+      margin-top: 8px;
+      transition: background .35s ease, transform .35s ease;
+    }
+    .caption-item strong {
+      display: block;
+      color: var(--text);
+      margin-bottom: 3px;
+      font-size: 15px;
+    }
+    .caption-item.active { color: rgba(243,237,226,.88); transform: translateX(3px); }
+    .caption-item.active .bullet { background: var(--gold); transform: scale(1.2); }
+
+    .outro-card {
+      grid-template-columns: 1fr;
+      max-width: 900px;
+      text-align: center;
+      justify-items: center;
+    }
+    .credits {
+      margin-top: 28px;
+      color: rgba(243,237,226,.42);
+      font-size: 13px;
+      line-height: 1.8;
+    }
+
+    @media (max-width: 1080px) {
+      .hero-card,
+      .outro-card {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        text-align: center;
+      }
+      .lede,
+      .outro-copy,
+      .title,
+      .outro-title { max-width: none; }
+      .stage-grid {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        align-content: center;
+        gap: 22px;
+        padding-top: calc(82px + env(safe-area-inset-top));
+      }
+      .stage-copy {
+        order: 1;
+        text-align: center;
+        max-width: 700px;
+      }
+      .video-column { order: 2; }
+      .callouts {
+        order: 3;
+        width: min(680px, 100%);
+        min-height: auto;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px 18px;
+      }
+      .callout {
+        position: static;
+        transform: none;
+        opacity: .24;
+        padding: 12px 14px;
+        border: 1px solid rgba(255,255,255,.08);
+        border-radius: 18px;
+        background: rgba(255,255,255,.03);
+      }
+    }
+
+    @media (max-width: 720px) {
+      .topbar { justify-content: center; }
+      .meta-chip { display: none; }
+      .brand { font-size: 11px; }
+      .hero,
+      .outro { padding-left: 20px; padding-right: 20px; }
+      .stage-grid {
+        padding-left: 18px;
+        padding-right: 18px;
+        align-content: start;
+      }
+      .stage-copy { max-width: 560px; }
+      .progress-wrap,
+      .caption-stack { display: none; }
+      .video-shell { width: min(82vw, 360px); }
+      .callouts { display: none; }
+      .mobile-ingredient { display: block; }
+      .stage-title { font-size: clamp(28px, 8vw, 54px); }
+      .stage-description { font-size: 15px; }
+      .scroll-hint { bottom: 20px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">Pasta Story <strong>•</strong> Scroll Film</div>
+    <div class="meta-chip">Uploaded MP4 · Scroll-controlled</div>
+  </div>
+
+  <section class="hero" id="top">
+    <div class="hero-card">
+      <div>
+        <div class="eyebrow">Cinematic food experience</div>
+        <h1 class="title">THE ART OF PASTA</h1>
+        <p class="lede">A single pasta dish becomes an editorial scroll story. As you move down the page, the uploaded video advances frame by frame — revealing each ingredient in a clean, layered composition.</p>
+        <div class="hero-actions">
+          <button class="button" id="startExperience">Start the experience</button>
+          <button class="button-secondary" id="jumpToLayers">Jump to the layers</button>
+        </div>
+      </div>
+      <div class="poster-shell" aria-hidden="true">
+        <video src="videos/pasta.mp4" autoplay muted loop playsinline aria-label="Preview of the pasta dish"></video>
+      </div>
+    </div>
+  </section>
+
+  <section class="experience" id="experienceSection" aria-label="Scroll-driven pasta story">
+    <div class="sticky-stage">
+      <div class="stage-grid">
+        <div class="stage-copy">
+          <div class="stage-tag">Crafted to perfection</div>
+          <h2 class="stage-title" id="sceneTitle">Every ingredient has a story.</h2>
+          <p class="stage-description" id="sceneDescription">Scroll to raise the pasta from the plate and reveal each layer. The motion comes directly from the uploaded video — forward when you scroll down, backward when you scroll up.</p>
+
+          <div class="progress-wrap" aria-hidden="true">
+            <div class="progress-track"><div class="progress-bar"></div></div>
+            <div class="progress-label" id="progressLabel">Scene 01 · Introduction</div>
+          </div>
+
+          <div class="caption-stack" id="captionStack">
+            <div class="caption-item" data-ref="spaghetti"><div class="bullet"></div><div><strong>Spaghetti</strong><span>The foundation of every perfect bite.</span></div></div>
+            <div class="caption-item" data-ref="sauce"><div class="bullet"></div><div><strong>Tomato Sauce</strong><span>Slow-cooked richness, naturally vibrant.</span></div></div>
+            <div class="caption-item" data-ref="cheese"><div class="bullet"></div><div><strong>Mozzarella & Parmesan</strong><span>Delicately melted, beautifully balanced.</span></div></div>
+            <div class="caption-item" data-ref="tomatoes"><div class="bullet"></div><div><strong>Cherry Tomatoes</strong><span>Freshness in every detail.</span></div></div>
+            <div class="caption-item" data-ref="basil"><div class="bullet"></div><div><strong>Fresh Basil</strong><span>The final aromatic touch.</span></div></div>
+          </div>
+        </div>
+
+        <div class="video-column">
+          <div class="video-shell">
+            <video id="pastaVideo" preload="auto" muted playsinline webkit-playsinline>
+              <source src="videos/pasta.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+            <div class="loading" id="loadingBadge"><div class="spinner"></div><span>Preparing video</span></div>
+            <div class="mobile-ingredient" id="mobileIngredient">
+              <div class="mobile-tag">Current highlight</div>
+              <h3 id="mobileIngredientTitle">Whole dish</h3>
+              <p id="mobileIngredientCopy">The complete pasta dish rises from the plate before each layer reveals itself.</p>
+            </div>
+          </div>
+          <div class="scroll-hint">Scroll</div>
+        </div>
+
+        <aside class="callouts" aria-label="Ingredient highlights">
+          <div class="callout" data-name="basil">
+            <div>
+              <h3>Fresh Basil</h3>
+              <p>The final aromatic touch.</p>
+            </div>
+          </div>
+          <div class="callout" data-name="tomatoes">
+            <div>
+              <h3>Cherry Tomatoes</h3>
+              <p>Freshness in every detail.</p>
+            </div>
+          </div>
+          <div class="callout" data-name="cheese">
+            <div>
+              <h3>Mozzarella & Parmesan</h3>
+              <p>Delicately melted, beautifully balanced.</p>
+            </div>
+          </div>
+          <div class="callout" data-name="sauce">
+            <div>
+              <h3>Tomato Sauce</h3>
+              <p>Slow-cooked richness, naturally vibrant.</p>
+            </div>
+          </div>
+          <div class="callout" data-name="spaghetti">
+            <div>
+              <h3>Spaghetti</h3>
+              <p>The foundation of every perfect bite.</p>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <section class="outro" id="outro">
+    <div class="outro-card">
+      <div class="eyebrow">Final frame</div>
+      <h2 class="outro-title">EVERY LAYER MATTERS.</h2>
+      <p class="outro-copy">The entire experience is driven by a single uploaded video and scroll-timeline logic. Swap in a higher-end cinematic render later and the same site structure will still work.</p>
+      <div class="outro-actions">
+        <button class="button" id="restartExperience">Replay from the start</button>
+        <button class="button-secondary" id="returnTop">Back to top</button>
+      </div>
+      <div class="credits">Built as a lightweight scroll site using the supplied MP4 asset. Video remains muted and scroll-scrubbed for smooth forward and reverse playback.</div>
+    </div>
+  </section>
+
+  <script>
+    (() => {
+      const video = document.getElementById('pastaVideo');
+      const experience = document.getElementById('experienceSection');
+      const loadingBadge = document.getElementById('loadingBadge');
+      const stageTitle = document.getElementById('sceneTitle');
+      const stageDescription = document.getElementById('sceneDescription');
+      const progressLabel = document.getElementById('progressLabel');
+      const callouts = [...document.querySelectorAll('.callout')];
+      const captions = [...document.querySelectorAll('.caption-item')];
+      const mobileIngredientTitle = document.getElementById('mobileIngredientTitle');
+      const mobileIngredientCopy = document.getElementById('mobileIngredientCopy');
+      const startExperience = document.getElementById('startExperience');
+      const jumpToLayers = document.getElementById('jumpToLayers');
+      const restartExperience = document.getElementById('restartExperience');
+      const returnTop = document.getElementById('returnTop');
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      const ingredientContent = {
+        whole: {
+          title: 'Whole dish',
+          copy: 'The complete pasta dish rises from the plate before each ingredient settles into its own position.'
+        },
+        spaghetti: {
+          title: 'Spaghetti',
+          copy: 'The foundation of every perfect bite.'
+        },
+        sauce: {
+          title: 'Tomato Sauce',
+          copy: 'Slow-cooked richness, naturally vibrant.'
+        },
+        cheese: {
+          title: 'Mozzarella & Parmesan',
+          copy: 'Delicately melted, beautifully balanced.'
+        },
+        tomatoes: {
+          title: 'Cherry Tomatoes',
+          copy: 'Freshness in every detail.'
+        },
+        basil: {
+          title: 'Fresh Basil',
+          copy: 'The final aromatic touch.'
+        }
+      };
+
+      const cuePoints = {
+        scene1End: 0.95,
+        scene2End: 1.65,
+        spaghetti: 0.95,
+        sauce: 1.7,
+        cheese: 2.25,
+        tomatoes: 2.95,
+        basil: 3.65,
+        finalHold: 4.45
+      };
+
+      let duration = 5.166667;
+      let targetTime = 0;
+      let renderedTime = 0;
+      let rafId = null;
+      let lastSeekTime = -1;
+      let metadataReady = false;
+
+      function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
+      }
+
+      function smoothStep(edge0, edge1, x) {
+        const t = clamp((x - edge0) / (edge1 - edge0), 0, 1);
+        return t * t * (3 - 2 * t);
+      }
+
+      function getExperienceProgress() {
+        const rect = experience.getBoundingClientRect();
+        const total = Math.max(experience.offsetHeight - window.innerHeight, 1);
+        const scrolled = clamp(-rect.top, 0, total);
+        return scrolled / total;
+      }
+
+      function computeSceneCopy(time) {
+        if (time < cuePoints.scene1End) {
+          return {
+            label: 'Scene 01 · Introduction',
+            title: 'Every ingredient has a story.',
+            desc: 'The dish begins fully assembled — warm, plated and ready to rise. Scroll down to move through the uploaded footage.',
+            active: 'whole'
+          };
+        }
+        if (time < cuePoints.scene2End) {
+          return {
+            label: 'Scene 02 · The rise',
+            title: 'Crafted to perfection.',
+            desc: 'The plate stays grounded while the dish lifts and prepares for the layered reveal.',
+            active: 'spaghetti'
+          };
+        }
+        if (time < cuePoints.cheese) {
+          return {
+            label: 'Scene 03 · Ingredient separation',
+            title: 'The structure begins to open.',
+            desc: 'Sauce starts to pull away from the pasta, making the architecture of the dish visible.',
+            active: 'sauce'
+          };
+        }
+        if (time < cuePoints.tomatoes) {
+          return {
+            label: 'Scene 03 · Ingredient separation',
+            title: 'A softer layer comes into focus.',
+            desc: 'The molten cheese settles into its own space, hovering above the sauce in a clean editorial stack.',
+            active: 'cheese'
+          };
+        }
+        if (time < cuePoints.basil) {
+          return {
+            label: 'Scene 03 · Ingredient separation',
+            title: 'Fresh accents step forward.',
+            desc: 'Cherry tomatoes rise next, adding color, brightness and contrast to the composition.',
+            active: 'tomatoes'
+          };
+        }
+        return {
+          label: 'Scene 04 · Exploded view',
+          title: 'Every layer matters.',
+          desc: 'The final frame holds each ingredient in a balanced vertical arrangement above the plate.',
+          active: 'basil'
+        };
+      }
+
+      function updateTextAndCallouts(time, progress) {
+        const scene = computeSceneCopy(time);
+        stageTitle.textContent = scene.title;
+        stageDescription.textContent = scene.desc;
+        progressLabel.textContent = scene.label;
+        const mobile = ingredientContent[scene.active] || ingredientContent.whole;
+        mobileIngredientTitle.textContent = mobile.title;
+        mobileIngredientCopy.textContent = mobile.copy;
+
+        callouts.forEach((item) => {
+          const name = item.dataset.name;
+          const visible = time >= (cuePoints[name] ?? 100);
+          item.classList.toggle('visible', visible);
+          item.classList.toggle('active', scene.active === name);
+        });
+
+        captions.forEach((item) => {
+          item.classList.toggle('active', item.dataset.ref === scene.active);
+        });
+
+        document.documentElement.style.setProperty('--progress', progress.toFixed(4));
+      }
+
+      function syncTargetFromScroll() {
+        if (!metadataReady) return;
+        const progress = getExperienceProgress();
+        const holdPad = 0.04;
+        targetTime = clamp(progress * (duration - holdPad), 0, duration - holdPad);
+        updateTextAndCallouts(targetTime, progress);
+      }
+
+      function renderLoop() {
+        // Only seek when the target moves enough to display a different frame;
+        // avoid reassigning currentTime every animation frame when scroll is idle.
+        const epsilon = 1 / 24;
+        const difference = targetTime - renderedTime;
+        if (Math.abs(difference) > epsilon) {
+          renderedTime = targetTime;
+        }
+        if (Math.abs(renderedTime - lastSeekTime) >= epsilon) {
+          video.currentTime = Math.max(0, Math.min(renderedTime, duration - 0.025));
+          lastSeekTime = renderedTime;
+        }
+        rafId = requestAnimationFrame(renderLoop);
+      }
+
+      function handleMetadata() {
+        duration = video.duration || duration;
+        metadataReady = true;
+        loadingBadge.classList.add('hidden');
+        video.pause();
+        video.currentTime = 0;
+        renderedTime = 0;
+        lastSeekTime = -1;
+        syncTargetFromScroll();
+        if (!rafId) renderLoop();
+      }
+
+      function setup() {
+        video.muted = true;
+        video.pause();
+        video.playsInline = true;
+        video.setAttribute('playsinline', '');
+
+        if (video.readyState >= 1) {
+          handleMetadata();
+        } else {
+          video.addEventListener('loadedmetadata', handleMetadata, { once: true });
+        }
+
+        video.addEventListener('canplay', () => loadingBadge.classList.add('hidden'));
+        video.addEventListener('waiting', () => loadingBadge.classList.remove('hidden'));
+        video.addEventListener('stalled', () => loadingBadge.classList.remove('hidden'));
+        video.addEventListener('error', () => {
+          loadingBadge.classList.remove('hidden');
+          loadingBadge.innerHTML = '<span>Video failed to load</span>';
+        });
+
+        window.addEventListener('scroll', syncTargetFromScroll, { passive: true });
+        window.addEventListener('resize', syncTargetFromScroll);
+        syncTargetFromScroll();
+
+        startExperience.addEventListener('click', () => {
+          experience.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+        });
+
+        jumpToLayers.addEventListener('click', () => {
+          const target = experience.offsetTop + window.innerHeight * 1.75;
+          window.scrollTo({ top: target, behavior: reduceMotion ? 'auto' : 'smooth' });
+        });
+
+        restartExperience.addEventListener('click', () => {
+          experience.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+        });
+
+        returnTop.addEventListener('click', () => {
+          window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+        });
+      }
+
+      setup();
+    })();
+  </script>
+</body>
+</html>
