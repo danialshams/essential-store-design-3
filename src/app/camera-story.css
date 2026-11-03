@@ -1,0 +1,125 @@
+/* NOIR / OPTICS — scroll-scrubbed camera hero proof-of-concept.
+   Photographic source is the previously approved original storyboard.
+   State transitions and independent part layers are real and reversible;
+   final mechanical CGI can replace the photographic layers without changing the UI. */
+body:has(.cs-root){background:#0a0a0c;color:#f6f0e6}
+body:has(.cs-root) .fg-header,
+body:has(.cs-root) .fg-footer,
+body:has(.cs-root) .premium-bottom-nav{display:none!important}
+body:has(.cs-root) main{overflow:visible}
+html:has(.cs-root){scroll-padding-top:0}
+.cs-root{background:#09090b;color:#ede7df;overflow:clip;font-family:inherit;--cs-gold:#c6a47b;--cs-ink:#09090b}
+.cs-root *{box-sizing:border-box}
+.cs-scroll-story{position:relative;height:520svh;background:#08090b}
+.cs-viewport{position:sticky;top:0;width:100%;height:100svh;min-height:570px;isolation:isolate;overflow:hidden;background:radial-gradient(ellipse at 70% 45%,#29211d 0%,#0d0e10 62%,#09090c 100%)}
+.cs-photo{position:absolute;inset:0;z-index:1;will-change:opacity;pointer-events:none;overflow:hidden}
+.cs-photo:not([data-cs-scene="intro"]){opacity:0;visibility:hidden}
+.cs-photo>img{display:block;width:100%!important;height:100%!important;object-fit:cover;object-position:center;transform-origin:64% 47%;will-change:transform}
+.cs-vignette{position:absolute;z-index:5;pointer-events:none;inset:0;background:linear-gradient(90deg,rgba(7,7,9,.94) 0%,rgba(7,7,9,.76) 24%,rgba(7,7,9,.25) 43%,rgba(7,7,9,0) 73%),linear-gradient(0deg,rgba(7,7,9,.92) 0%,transparent 22%,transparent 81%,rgba(7,7,9,.61) 100%)}
+.cs-grain{position:absolute;z-index:7;inset:-25%;pointer-events:none;opacity:.13;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.62' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.32'/%3E%3C/svg%3E");mix-blend-mode:soft-light}
+.cs-header{position:absolute;top:0;left:0;right:0;z-index:45;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:0 max(40px,5.5vw);height:92px;border-bottom:1px solid rgba(255,255,255,.12);background:linear-gradient(#09090cc2,#09090c00);direction:ltr}
+.cs-identity{display:inline-flex;align-items:center;gap:12px;color:#f0e9e0;text-decoration:none;font:650 15px/1.1 Georgia,serif;letter-spacing:.32em;white-space:nowrap}
+.cs-identity svg{color:var(--cs-gold)}.cs-identity b{color:#ad8567;font-weight:400}
+.cs-nav{display:flex;align-items:center;gap:clamp(17px,2.7vw,52px);direction:rtl}
+.cs-nav a{color:#ded5c9;text-decoration:none;font-size:12px;font-weight:500;white-space:nowrap;letter-spacing:.01em;transition:color .25s}
+.cs-nav a:hover{color:#d8af7e}
+.cs-header-cta{color:#e5d5c1;display:flex;align-items:center;gap:9px;text-decoration:none;font-size:11px;font-weight:600;white-space:nowrap;border-bottom:1px solid #9a7c60;padding-bottom:8px;direction:rtl;transition:color .25s,gap .25s}
+.cs-header-cta:hover{gap:16px;color:#fff}
+.cs-serial{position:absolute;z-index:9;left:max(40px,5.5vw);right:max(40px,5.5vw);top:116px;display:flex;align-items:center;justify-content:space-between;color:#a7a09b;font:10px Georgia,serif;letter-spacing:.28em;pointer-events:none}
+.cs-serial span:last-child{margin-right:5.2vw}
+.cs-content-stack{position:absolute;z-index:16;left:max(42px,7vw);top:49%;transform:translateY(-36%);width:min(39vw,600px);min-height:395px;text-align:right;pointer-events:none}
+.cs-copy{position:absolute;inset:0;display:flex;align-items:flex-start;flex-direction:column;pointer-events:none;will-change:opacity,transform}
+.cs-copy:not(:first-child){opacity:0;visibility:hidden}
+.cs-eyebrow{display:flex;align-items:center;justify-content:flex-start;gap:14px;direction:ltr;color:#c7b9a9;margin-bottom:18px;white-space:nowrap}
+.cs-eyebrow>span{font:34px Georgia,serif;font-weight:400;color:#b8ada2}
+.cs-eyebrow i{width:39px;height:1px;background:#b9946c}
+.cs-eyebrow b{font:9px Georgia,serif;font-weight:400;letter-spacing:.32em;color:#c4b6a4}
+.cs-copy h1{white-space:normal;margin:0;color:#f3e9dc;font-family:inherit;font-size:clamp(42px,4.25vw,82px);font-weight:520;line-height:1.48;letter-spacing:-.056em;text-shadow:0 3px 28px #07060783;max-width:600px}
+.cs-copy h1 span{display:block}
+.cs-copy p{max-width:375px;margin:24px 0 0;color:#bdb1a7;font-size:clamp(12px,.98vw,15px);line-height:2.2;font-weight:400}
+.cs-intro-actions{margin-top:26px;display:flex;flex-direction:column;align-items:flex-start;gap:20px;pointer-events:auto}
+.cs-intro-actions>span{font:9px Georgia,serif;letter-spacing:.27em;color:#a99a8a}
+.cs-gold-button{display:inline-flex;align-items:center;justify-content:space-between;gap:25px;background:#bea080;color:#100e0d;border:1px solid #d4b99b;text-decoration:none;font-size:12px;font-weight:650;padding:13px 21px;min-height:48px;white-space:nowrap;box-shadow:0 4px 28px #d1a16d16;pointer-events:auto;transition:background .28s,color .28s,transform .28s}
+.cs-gold-button:hover{background:#eee0cd;color:#16110e;transform:translateY(-2px)}
+.cs-part-legend{display:flex;gap:13px;flex-wrap:wrap;margin-top:30px;direction:rtl}
+.cs-part-legend span{border:1px solid #a7896f67;padding:8px 10px;color:#d0bca8;font-size:10px;background:#18131052}
+.cs-side-steps{position:absolute;z-index:32;right:max(35px,4vw);top:50%;transform:translateY(-44%);display:grid;grid-template-rows:repeat(4,50px);gap:0}
+.cs-side-steps button{display:flex;gap:13px;align-items:center;border:0;background:transparent;color:#9b938a;cursor:pointer;position:relative;z-index:3;direction:ltr;padding:0;transition:color .3s}
+.cs-side-steps button>span{width:11px;height:11px;border:1px solid #aa9c90;background:#101013;border-radius:50%;position:relative;transition:background .25s,box-shadow .25s,border .25s}
+.cs-side-steps button.is-current>span{background:#dfc099;border-color:#dfc099;box-shadow:0 0 0 4px #bb8c6140,0 0 20px #e6b886c7}
+.cs-side-steps button em{font:11px Georgia,serif;font-style:normal;letter-spacing:.08em}
+.cs-side-steps button.is-current{color:#f6e7d4}
+.cs-steps-track{position:absolute;z-index:1;top:24px;bottom:24px;left:5px;width:1px;background:#cbb69b47;pointer-events:none}
+.cs-steps-track span{display:block;width:1px;height:100%;background:#e0ad79;transform:scaleY(0);transform-origin:top}
+.cs-bottom{position:absolute;z-index:30;bottom:34px;left:max(40px,5.5vw);right:max(40px,5.5vw);display:flex;align-items:center;justify-content:space-between;gap:12px;color:#aca094;font:9px Georgia,serif;letter-spacing:.23em;pointer-events:none}
+.cs-bottom>div{display:flex;align-items:center;gap:12px;color:#d3b693}
+.cs-scroll-indicator{display:block;width:1px;height:32px;background:linear-gradient(#e3bf8d,transparent)}
+.cs-explosion-photo{background:radial-gradient(ellipse at 70% 44%,#4b382b 0%,#1c1b1c 38%,#08090a 78%)}
+.cs-explosion-shine{position:absolute;z-index:0;width:67%;height:46%;top:23%;left:31%;border-radius:50%;background:#b6814b2e;filter:blur(105px);pointer-events:none}
+.cs-explosion-parts{position:absolute;inset:0;z-index:2;pointer-events:none}
+.cs-explosion-parts img{display:block;position:absolute;height:auto!important;max-width:none;object-fit:contain;will-change:transform,opacity;filter:drop-shadow(0 8px 20px #0008)}
+.cs-explosion-floor{position:absolute;left:32%;right:2%;bottom:31%;height:1px;background:linear-gradient(90deg,transparent,#a27c5555,transparent);box-shadow:0 28px 70px 20px #b9864026;pointer-events:none}
+.cs-callouts{position:absolute;z-index:21;inset:0;pointer-events:none}
+.cs-callout{position:absolute;min-width:185px;max-width:230px;border:1px solid #c1ad9352;background:#1414149c;padding:15px 17px;backdrop-filter:blur(6px);text-align:right;direction:rtl;display:flex;flex-direction:column;gap:5px;color:#eee3d4;will-change:opacity,transform}
+.cs-callout i{position:absolute;top:50%;width:70px;height:1px;background:#c6a47b;box-shadow:0 0 10px #edc7998c}
+.cs-callout i:after{content:"";position:absolute;right:-3px;top:-3px;width:7px;height:7px;border-radius:50%;background:#e6ba85;box-shadow:0 0 10px #e6ba85}
+.cs-callout strong{font-size:13px;font-weight:650;line-height:1.7}.cs-callout span{font-size:10px;line-height:1.9;color:#b2a599}
+.cs-callout-sensor{right:37%;top:50%}.cs-callout-sensor i{right:100%}
+.cs-callout-lens{right:5%;top:62%}.cs-callout-lens i{right:100%}
+.cs-end{padding:115px 20px 140px;min-height:450px;background:radial-gradient(ellipse at 60% 0%,#30241d 0%,#101013 60%);text-align:center;display:flex;flex-direction:column;align-items:center}
+.cs-end>span{color:#ac9377;font:10px Georgia,serif;letter-spacing:.23em}
+.cs-end h2{font-weight:540;letter-spacing:-.05em;font-size:clamp(36px,5vw,68px);line-height:1.55;margin:23px 0 9px}.cs-end h2 em{font-style:normal;color:#cba882}
+.cs-end>p{max-width:590px;color:#b7aaa0;font-size:13px;line-height:2.2;margin:14px 0 28px}
+.cs-end>div{display:flex;gap:15px;justify-content:center;flex-wrap:wrap}
+.cs-end>div a{display:inline-flex;align-items:center;gap:14px;padding:15px 21px;color:#e5d4be;border:1px solid #bea0807d;text-decoration:none;font-size:12px;transition:background .25s}
+.cs-end>div a:hover{background:#b79a7652}
+@media (max-width:1050px){
+ .cs-content-stack{left:5vw;width:41vw}
+ .cs-copy h1{font-size:clamp(39px,5vw,63px)}
+ .cs-copy p{max-width:330px}
+ .cs-photo>img{object-position:59% center}
+ .cs-callout-sensor{right:34%;top:46%}.cs-callout-lens{top:68%}
+}
+@media (max-width:760px){
+ .cs-scroll-story{height:440svh}
+ .cs-viewport{min-height:530px;height:100svh}
+ .cs-header{height:68px;padding-inline:23px}
+ .cs-identity{font-size:13px;letter-spacing:.22em}.cs-identity svg{width:19px}
+ .cs-nav{display:none}.cs-header-cta{font-size:10px}
+ .cs-serial{top:92px;left:22px;right:22px;font-size:7px;letter-spacing:.17em}
+ .cs-serial span:last-child{font-size:6px;margin-right:0}
+ .cs-photo>img{object-position:63% 42%;object-fit:cover}
+ .cs-vignette{background:linear-gradient(0deg,#08080c 0%,#08080bcf 21%,transparent 64%),linear-gradient(90deg,#08080b5e,transparent 42%,#08080b33)}
+ .cs-photo[data-cs-scene="explode"]{background:#111011 url('/images/camera-story/exploded.webp') no-repeat 67% 39% / cover}
+ .cs-explosion-parts{display:none}.cs-explosion-floor,.cs-explosion-shine{display:none}
+ .cs-content-stack{left:22px;right:24px;top:auto;bottom:82px;width:auto;transform:none;min-height:300px}
+ .cs-copy{justify-content:flex-end;min-height:300px}
+ .cs-copy h1{font-size:clamp(38px,9vw,65px);line-height:1.34}
+ .cs-eyebrow{margin-bottom:8px}.cs-eyebrow>span{font-size:23px}.cs-eyebrow b{font-size:8px}
+ .cs-copy p{margin-top:15px;font-size:12px;line-height:2.0;max-width:85%}
+ .cs-gold-button{padding:11px 16px;min-height:43px;font-size:11px}.cs-intro-actions{margin-top:18px;gap:10px}.cs-intro-actions>span{font-size:7px}
+ .cs-side-steps{right:18px;top:25%;grid-template-rows:repeat(4,42px);transform:none}
+ .cs-side-steps button em{font-size:8px}.cs-side-steps button>span{width:9px;height:9px}.cs-steps-track{left:4px;top:21px;bottom:20px}
+ .cs-bottom{bottom:19px;left:20px;right:20px;font-size:7px;letter-spacing:.1em}.cs-bottom>span:last-child{display:none}.cs-scroll-indicator{height:17px}
+ .cs-part-legend{gap:6px;margin-top:12px}.cs-part-legend span{font-size:8px;padding:6px}
+ .cs-callout{padding:8px 11px;min-width:0;max-width:155px}.cs-callout strong{font-size:10px}.cs-callout span{font-size:9px}
+ .cs-callout i{width:25px}.cs-callout-sensor{top:29%;right:42%}.cs-callout-lens{top:49%;right:5%}
+ .cs-end{min-height:0;padding:87px 22px 102px}.cs-end>p{font-size:12px}.cs-end>div{flex-direction:column;width:100%;max-width:300px}.cs-end>div a{justify-content:center}
+}
+@media (max-width:420px){
+ .cs-serial span:last-child{display:none}
+ .cs-header-cta{border-bottom:0;white-space:normal;text-align:right;width:88px}
+ .cs-content-stack{bottom:78px;min-height:285px}
+ .cs-copy{min-height:285px}
+ .cs-copy h1{font-size:39px}.cs-copy p{font-size:11px;max-width:88%}
+ .cs-side-steps{right:14px;top:22%}
+ .cs-callout-sensor{right:40%;top:24%}.cs-callout-lens{right:8%;top:40%}
+}
+@media (prefers-reduced-motion:reduce){
+ .cs-scroll-story{height:100svh;min-height:570px}
+ .cs-viewport{position:relative;min-height:570px}
+ .cs-photo:not([data-cs-scene="intro"]),.cs-side-steps{display:none!important}
+ .cs-copy:not(:first-child),.cs-callouts{display:none!important}
+ .cs-copy:first-child{opacity:1!important;visibility:visible!important}
+ .cs-end{min-height:320px}
+}

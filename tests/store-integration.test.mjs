@@ -24,7 +24,7 @@ test("single focusable search panel is used on mobile and desktop",()=>{
  assert.doesNotMatch(header,/mobile-search-drawer/);
 });
 test("editorial homepage consumes shared admin catalog, banners, content, categories and settings",()=>{
- const home=read("../src/app/page.tsx");
+ const home=read("../src/app/atelier/page.tsx");
  assert.match(home,/await loadStore\(\)/);
  assert.match(home,/store\.categories/);
  assert.match(home,/store\.products/);

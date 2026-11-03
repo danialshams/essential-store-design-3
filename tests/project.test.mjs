@@ -26,7 +26,7 @@ test("shared admin public catalog adapter remains read-only",()=>{
 });
 test("mobile navigation and accessible controls present",()=>{
  const bottom=read("src/components/BottomNav.tsx"),home=read("src/app/page.tsx"),css=read("src/app/globals.css");
- assert.match(bottom,/خانه/);assert.match(bottom,/سبد خرید/);assert.match(home,/Immersive|FlagshipMotion|کالکشن/);
+ assert.match(bottom,/خانه/);assert.match(bottom,/سبد خرید/);assert.match(home,/CameraScrollHero/);
  const flagship=read("src/app/flagship.css");
  assert.match(flagship,/@media \(max-width:760px\)/);
  assert.match(flagship,/\.premium-bottom-nav/);

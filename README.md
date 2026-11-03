@@ -1,3 +1,20 @@
+# NOIR OPTICS — camera scroll hero (prototype)
+
+The `/` homepage is now a four-act, reversible camera-scroll study:
+
+1. Camera hero and cinematic dolly-in
+2. Macro close-up and camera move
+3. Independently layered, transparent mechanical component sprites scatter on scroll and reunite on reverse scroll
+4. Sensor and optics close-ups with technical callouts
+
+Built on **GSAP + ScrollTrigger**, without Three.js or browser-side WebGL. Local WebP imagery (about 0.5 MB total) was extracted and retouched from the **user-approved visual storyboard**. This is a **2.5D prototype**, not a true Blender/Cycles 3D render or physically accurate camera assembly. For final cinema-grade continuous motion, replace assets with Blender-rendered component sequences.
+
+The previous Edition 03 flagship storefront remains at `/atelier`, and all commerce routes and shared-admin integration remain unchanged. `prefers-reduced-motion` shows a static first scene with direct navigation; mobile omits the expensive seven-layer desktop explosion and shows a lighter image-based version.
+
+Run `npm test`, `npm run syntax`, `npm run typecheck`, `npm run build` before release. Do not commit `.env` files or storefront API keys.
+
+---
+
 # ATELIER — Digital Flagship / Edition 03
 
 Independent, RTL, mobile-first Next.js 16 storefront. Unlike the economic and editorial editions, this design uses a dark immersive hero, selectable category gallery, desktop-pinned three-act narrative, oversized product study, contextual shopping hotspots, quick preview, a full-screen interactive navigation, and a true cart drawer. All photography is bundled in `public/images/` for the demo.

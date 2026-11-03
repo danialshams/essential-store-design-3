@@ -6,6 +6,7 @@ import {Footer} from "@/components/Footer";
 import {loadStore} from "@/lib/live-store";
 import "./globals.css";
 import "./flagship.css";
+import "./camera-story.css";
 export async function generateMetadata():Promise<Metadata>{const store=await loadStore();return {title:{default:store.settings.seoTitle||store.settings.storeName,template:`%s | ${store.settings.storeName}`},description:store.settings.seoDescription||store.settings.description,robots:{index:store.live,follow:store.live}};}
 export const viewport:Viewport={width:"device-width",initialScale:1,themeColor:"#141414"};
 export const dynamic="force-dynamic";

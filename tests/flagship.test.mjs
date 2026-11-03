@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {existsSync,readFileSync,statSync} from "node:fs";
 const read=(path)=>readFileSync(new URL(`../${path}`,import.meta.url),"utf8");
 test("edition 03 has independent visual system and complete commerce routes",()=>{
- const layout=read("src/app/layout.tsx"),home=read("src/app/page.tsx");
+ const layout=read("src/app/layout.tsx"),home=read("src/app/atelier/page.tsx");
  assert.match(layout,/flagship.css/);
  assert.doesNotMatch(layout,/premium.css|cinematic.css/);
  for(const text of ["FlagshipMotion","CollectionGallery","ShopTheScene","fg-chapters","fg-spotlight","fg-curated","fg-journal"])assert.ok(home.includes(text),`Missing flagship section ${text}`);
@@ -39,7 +39,7 @@ test("GSAP is scoped, progressive, motion-safe and uses one desktop pinned story
  assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
 });
 test("flagship uses shared admin products and server-protected order checkout",()=>{
- const store=read("src/lib/live-store.ts"),proxy=read("src/app/api/store/order/route.ts"),home=read("src/app/page.tsx");
+ const store=read("src/lib/live-store.ts"),proxy=read("src/app/api/store/order/route.ts"),home=read("src/app/atelier/page.tsx");
  assert.match(store,/STOREFRONT_ADMIN_ORIGIN/);
  assert.match(store,/homeSections/);
  assert.match(home,/spotlight\.price/);

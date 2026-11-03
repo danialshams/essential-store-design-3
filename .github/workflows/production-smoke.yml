@@ -27,19 +27,19 @@ jobs:
           for attempt in range(30):
               try:
                   paths=['/','/products','/category/bags','/product/minimal-leather-bag',
-                         '/cart','/checkout','/account','/blog','/info/privacy']
+                         '/cart','/checkout','/account','/blog','/info/privacy','/atelier']
                   for path in paths:
                       status,_,html=fetch(store,path)
                       if status!=200 or b'<html' not in html.lower():
                           raise AssertionError(f'Flagship page error: {path} ({status})')
                   _,_,home=fetch(store,'/')
-                  for marker in [b'fg-hero',b'fg-collection',b'fg-chapters',
-                                 b'fg-spotlight',b'fg-scene',b'fg-hotspot',b'fg-nav-cover']:
+                  for marker in [b'cs-scroll-story',b'cs-viewport',b'data-cs-scene',
+                                 b'cs-explosion-parts',b'data-cs-part',b'cs-callouts']:
                       if marker not in home:
-                          raise AssertionError('Flagship content missing: '+marker.decode())
-                  assets=['flagship-hero.webp','flagship-chapter-1.webp','flagship-chapter-2.webp',
-                          'flagship-chapter-3.webp','flagship-scene.webp','flagship-spotlight.webp',
-                          'flagship-outro.webp']
+                          raise AssertionError('Camera scroll content missing: '+marker.decode())
+                  assets=['camera-story/intro.webp','camera-story/macro.webp','camera-story/exploded.webp',
+                          'camera-story/details.webp','camera-story/part-lens.webp','camera-story/part-sensor.webp',
+                          'camera-story/part-board.webp']
                   for asset in assets:
                       status,headers,data=fetch(store,'/images/'+asset)
                       if status!=200 or len(data)<2000 or 'image/webp' not in headers.get('Content-Type',''):
@@ -72,7 +72,7 @@ jobs:
                       rejection=json.loads(error.read().decode('utf8'))
                       if 'کالا' not in rejection.get('error',''):
                           raise AssertionError('Order rejected without real product validation: '+str(rejection))
-                  print('PASS: 9 rendered pages + flagship interaction markup + 7 bundled WebP images')
+                  print('PASS: 10 rendered pages + camera-scroll markup + 7 local camera WebP images')
                   print('PASS: admin/Edition 03 share 8+ live products and prices/inventory')
                   print('PASS: invalid order rejected by actual admin service; zero synthetic orders inserted')
                   break
