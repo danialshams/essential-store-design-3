@@ -1,0 +1,83 @@
+name: Flagship Edition 03 production smoke
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-live-flagship:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Check live flagship pages, demo images, panel catalog and safe order relay
+        run: |
+          python3 - <<'PY'
+          import json, time, urllib.request, urllib.error
+          admin='https://studio-commerce-admin.vercel.app'
+          store='https://essential-store-design-3.vercel.app'
+          def fetch(base,path):
+              req=urllib.request.Request(base+path,headers={'User-Agent':'Flagship-Edition-03-Healthcheck/1.0'})
+              with urllib.request.urlopen(req,timeout=20) as response:
+                  return response.status,response.headers,response.read()
+          def read_json(base,path):
+              status,_,body=fetch(base,path)
+              if status!=200: raise AssertionError(f'Non-200 API {base}{path}: {status}')
+              return json.loads(body)
+          for attempt in range(30):
+              try:
+                  paths=['/','/products','/category/bags','/product/minimal-leather-bag',
+                         '/cart','/checkout','/account','/blog','/info/privacy']
+                  for path in paths:
+                      status,_,html=fetch(store,path)
+                      if status!=200 or b'<html' not in html.lower():
+                          raise AssertionError(f'Flagship page error: {path} ({status})')
+                  _,_,home=fetch(store,'/')
+                  for marker in [b'fg-hero',b'fg-collection',b'fg-chapters',
+                                 b'fg-spotlight',b'fg-scene',b'fg-hotspot',b'fg-nav-cover']:
+                      if marker not in home:
+                          raise AssertionError('Flagship content missing: '+marker.decode())
+                  assets=['flagship-hero.webp','flagship-chapter-1.webp','flagship-chapter-2.webp',
+                          'flagship-chapter-3.webp','flagship-scene.webp','flagship-spotlight.webp',
+                          'flagship-outro.webp']
+                  for asset in assets:
+                      status,headers,data=fetch(store,'/images/'+asset)
+                      if status!=200 or len(data)<2000 or 'image/webp' not in headers.get('Content-Type',''):
+                          raise AssertionError('Image missing/invalid: '+asset)
+                  admin_data=read_json(admin,'/api/store/bootstrap')
+                  store_data=read_json(store,'/api/catalog')
+                  if admin_data.get('mode')!='live' or store_data.get('demo') is not False:
+                      raise AssertionError('Store not using live PostgreSQL-backed admin catalog')
+                  admin_products={p['slug']:p for p in admin_data['products']}
+                  products={p['slug']:p for p in store_data['products']}
+                  if len(products)<8 or set(products)!=set(admin_products):
+                      raise AssertionError('Live products do not match admin catalog')
+                  for slug,raw in admin_products.items():
+                      for key in ('id','name','price','inventory'):
+                          if products[slug][key]!=raw[key]:
+                              raise AssertionError(f'Catalog field mismatch for {slug}: {key}')
+                  request_body=json.dumps({
+                      'buyer':{'name':'بررسی ارتباط','phone':'09120000000','province':'تهران','city':'تهران','address':'آدرس تست'},
+                      'items':[{'productId':'invalid-flagship-ci-product-id','quantity':1}],
+                      'shippingId':'demo-post'
+                  },ensure_ascii=False).encode('utf8')
+                  req=urllib.request.Request(store+'/api/store/order',data=request_body,method='POST',
+                      headers={'Content-Type':'application/json','Origin':store})
+                  try:
+                      with urllib.request.urlopen(req,timeout=20) as response:
+                          raise AssertionError('Invalid order unexpectedly accepted: '+str(response.status))
+                  except urllib.error.HTTPError as error:
+                      if error.code!=409:
+                          raise AssertionError('Invalid order did not reach admin validation: '+str(error.code))
+                      rejection=json.loads(error.read().decode('utf8'))
+                      if 'کالا' not in rejection.get('error',''):
+                          raise AssertionError('Order rejected without real product validation: '+str(rejection))
+                  print('PASS: 9 rendered pages + flagship interaction markup + 7 bundled WebP images')
+                  print('PASS: admin/Edition 03 share 8+ live products and prices/inventory')
+                  print('PASS: invalid order rejected by actual admin service; zero synthetic orders inserted')
+                  break
+              except Exception as e:
+                  print('Attempt',attempt+1,'failed:',type(e).__name__,str(e),flush=True)
+                  if attempt==29: raise
+                  time.sleep(6)
+          PY
