@@ -1,0 +1,70 @@
+name: Blender Pasta — Real 3D Render Proof
+
+on:
+  push:
+    branches:
+      - experiment/blender-pasta-proof-20261103
+    paths:
+      - ".github/workflows/blender-pasta-proof.yml"
+      - "blender/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: blender-pasta-proof
+  cancel-in-progress: true
+
+jobs:
+  render:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - name: Checkout isolated prototype branch
+        uses: actions/checkout@v4
+
+      - name: Install actual Blender and FFmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends blender ffmpeg
+          blender --version | head -n 3
+          ffmpeg -version | head -n 1
+
+      - name: Render 3D scene and animated ingredient separation
+        run: |
+          mkdir -p output/pasta
+          blender --background --factory-startup --threads 2 \
+            --python blender/pasta_scene.py -- \
+            --output "$GITHUB_WORKSPACE/output/pasta"
+
+      - name: Encode a playable preview from the rendered frames
+        run: |
+          ffmpeg -hide_banner -loglevel error -y \
+            -framerate 12 -pattern_type glob -i 'output/pasta/frame-*.png' \
+            -c:v libx264 -preset medium -crf 20 \
+            -pix_fmt yuv420p -movflags +faststart \
+            output/pasta/real-blender-pasta-preview.mp4
+
+      - name: Verify Blender project, image frames and MP4
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          root = Path("output/pasta")
+          frames = sorted(root.glob("frame-*.png"))
+          assert len(frames) == 24, f"Expected 24 REAL Blender-rendered frames, found {len(frames)}"
+          assert (root / "pasta-proof.blend").stat().st_size > 10000
+          assert (root / "real-blender-pasta-preview.mp4").stat().st_size > 10000
+          assert (root / "manifest.json").exists()
+          print(json.dumps({"rendered_frames":len(frames),"first":frames[0].name,"last":frames[-1].name},indent=2))
+          PY
+
+      - name: Upload actual Blender project and rendered media
+        uses: actions/upload-artifact@v4
+        with:
+          name: pasta-real-3d-proof
+          path: output/pasta/
+          retention-days: 7
+          compression-level: 0
+          if-no-files-found: error
