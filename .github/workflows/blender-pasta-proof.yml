@@ -27,9 +27,16 @@ jobs:
       - name: Install official precompiled Blender 4.5 LTS (no slow apt dependency downloads)
         run: |
           set -euo pipefail
-          curl -fL --retry 3 --connect-timeout 20 --max-time 600 \
-            https://download.blender.org/release/Blender4.5/blender-4.5.15-linux-x64.tar.xz \
-            -o /tmp/blender-linux.tar.xz
+          for attempt in $(seq 1 12); do
+            echo "Blender download (resumable): attempt $attempt"
+            if curl --fail --location --continue-at - --retry 2 --retry-all-errors \
+                --retry-delay 2 --connect-timeout 20 --max-time 300 \
+                https://download.blender.org/release/Blender4.5/blender-4.5.15-linux-x64.tar.xz \
+                -o /tmp/blender-linux.tar.xz; then
+              break
+            fi
+            sleep 2
+          done
           curl -fL --retry 3 --connect-timeout 20 --max-time 90 \
             https://download.blender.org/release/Blender4.5/blender-4.5.15.sha256 \
             -o /tmp/blender-official.sha256
