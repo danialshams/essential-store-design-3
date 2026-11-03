@@ -24,11 +24,22 @@ jobs:
       - name: Checkout isolated prototype branch
         uses: actions/checkout@v4
 
-      - name: Install actual Blender and FFmpeg
+      - name: Install official precompiled Blender 4.5 LTS (no slow apt dependency downloads)
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends blender ffmpeg
-          blender --version | head -n 3
+          set -euo pipefail
+          curl -fL --retry 3 --connect-timeout 20 --max-time 600 \
+            https://download.blender.org/release/Blender4.5/blender-4.5.15-linux-x64.tar.xz \
+            -o /tmp/blender-linux.tar.xz
+          curl -fL --retry 3 --connect-timeout 20 --max-time 90 \
+            https://download.blender.org/release/Blender4.5/blender-4.5.15.sha256 \
+            -o /tmp/blender-official.sha256
+          expected="$(grep 'blender-4.5.15-linux-x64.tar.xz' /tmp/blender-official.sha256 | grep -Eo '[a-f0-9]{64}' | head -n 1)"
+          actual="$(sha256sum /tmp/blender-linux.tar.xz | awk '{print $1}')"
+          test -n "$expected" && test "$expected" = "$actual"
+          tar -xJf /tmp/blender-linux.tar.xz -C /tmp
+          echo "/tmp/blender-4.5.15-linux-x64" >> "$GITHUB_PATH"
+          /tmp/blender-4.5.15-linux-x64/blender --version | head -n 3
+          command -v ffmpeg
           ffmpeg -version | head -n 1
 
       - name: Render 3D scene and animated ingredient separation
