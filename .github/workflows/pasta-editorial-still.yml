@@ -1,0 +1,61 @@
+name: Blender - detailed baked-pasta single CGI still
+on:
+  push:
+    branches: [experiment/blender-pasta-still-20261103]
+    paths:
+      - 'blender/pasta_still/editorial.py'
+      - '.github/workflows/pasta-editorial-still.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: blender-baked-pasta-single-frame
+  cancel-in-progress: true
+jobs:
+  render:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download CC0 photographic PBR wood and restaurant HDRI
+        run: |
+          mkdir -p assets/pasta output/pasta-premium
+          python3 blender/pasta_still/download.py assets/pasta
+      - name: Install SHA256-checked official Blender 4.5.15 LTS
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 https://download.blender.org/release/Blender4.5/blender-4.5.15-linux-x64.tar.xz -o /tmp/blender.tar.xz
+          curl -fsSL --retry 3 https://download.blender.org/release/Blender4.5/blender-4.5.15.sha256 -o /tmp/blender.sha256
+          expected="$(grep 'blender-4.5.15-linux-x64.tar.xz' /tmp/blender.sha256 | grep -Eo '[a-f0-9]{64}' | head -n 1)"
+          test "$expected" = "$(sha256sum /tmp/blender.tar.xz | awk '{print $1}')"
+          tar -xJf /tmp/blender.tar.xz -C /tmp
+          echo "/tmp/blender-4.5.15-linux-x64" >> "$GITHUB_PATH"
+      - name: Render original high-detail 1600x1000 baked rigatoni with Cycles
+        run: |
+          blender -b --factory-startup --threads 2 \
+            --python blender/pasta_still/editorial.py -- \
+            --assets "$GITHUB_WORKSPACE/assets/pasta" \
+            --output "$GITHUB_WORKSPACE/output/pasta-premium"
+      - name: Validate Cycles image and editable scene
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from struct import unpack
+          import json
+          d=Path("output/pasta-premium")
+          im=d/"baked-pasta-cycles.png"
+          assert im.stat().st_size>200000, "Missing Cycles output"
+          with im.open("rb") as f: h=f.read(24)
+          assert h[:8]==b'\x89PNG\r\n\x1a\n'
+          assert unpack(">II",h[16:24])==(1600,1000)
+          assert (d/"baked-pasta-editorial.blend").stat().st_size>200000
+          print("Quality-stage raster + Blender source verified",json.loads((d/"render-info.json").read_text()))
+          PY
+      - name: Upload source scene and unretouched render for inspection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: baked-pasta-cycles-editorial-still
+          path: output/pasta-premium/
+          retention-days: 7
+          if-no-files-found: warn
