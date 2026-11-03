@@ -13,7 +13,7 @@ def fetch(url,path,expected=None):
     print("Downloaded",path,len(data),"SHA256",digest,flush=True)
     return path
 model_url="https://www.innerscene.com/api/library/plate-of-pasta-dbabea81/download"
-model=fetch(model_url,out/"plate-of-pasta.glb",expected="899cfd3820e745adfcee13e4f9d98de56e193a7e9f338e2bb2fbd8225a5e6b6a")
+model=fetch(model_url,out/"plate-of-pasta.glb",expected="aa4681db5f89b1fb00c02f0159f53e19c41f659f6576b5eb5fb7f27d040513c5")
 if model.read_bytes()[:4] != b'glTF':raise RuntimeError("Source is not a GLB")
 fetch("https://www.innerscene.com/api/library/plate-of-pasta-dbabea81/preview",out/"source-preview.jpg")
 def api(url):
