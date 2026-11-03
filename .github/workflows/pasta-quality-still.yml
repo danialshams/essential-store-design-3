@@ -1,0 +1,71 @@
+name: Blender Cycles pasta — single-frame photographic quality review
+on:
+  push:
+    branches: [experiment/blender-pasta-still-20261103]
+    paths:
+      - '.github/workflows/pasta-quality-still.yml'
+      - 'blender/pasta_still/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: blender-pasta-still-cycles
+  cancel-in-progress: true
+jobs:
+  render:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download source CC0 GLB and photo-based environment
+        run: |
+          mkdir -p assets/pasta output/pasta-still
+          python3 blender/pasta_still/download.py assets/pasta
+      - name: Install official Blender 4.5.15 LTS with SHA256 verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 --connect-timeout 20 --max-time 600 \
+            https://download.blender.org/release/Blender4.5/blender-4.5.15-linux-x64.tar.xz \
+            -o /tmp/blender-linux.tar.xz
+          curl -fL --retry 3 --connect-timeout 20 --max-time 90 \
+            https://download.blender.org/release/Blender4.5/blender-4.5.15.sha256 \
+            -o /tmp/blender-official.sha256
+          expected="$(grep 'blender-4.5.15-linux-x64.tar.xz' /tmp/blender-official.sha256 | grep -Eo '[a-f0-9]{64}' | head -n 1)"
+          actual="$(sha256sum /tmp/blender-linux.tar.xz | awk '{print $1}')"
+          test -n "$expected" && test "$expected" = "$actual"
+          tar -xJf /tmp/blender-linux.tar.xz -C /tmp
+          echo "/tmp/blender-4.5.15-linux-x64" >> "$GITHUB_PATH"
+      - name: Render single 1450x960 beauty frame with Blender Cycles
+        run: |
+          blender --background --factory-startup --threads 2 \
+            --python blender/pasta_still/render.py -- \
+            --assets "$GITHUB_WORKSPACE/assets/pasta" \
+            --output "$GITHUB_WORKSPACE/output/pasta-still"
+      - name: Verify real rendered frame
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from struct import unpack
+          import json
+          root=Path("output/pasta-still")
+          p=root/"pasta-beauty.png"
+          assert p.stat().st_size>100000
+          with p.open("rb") as f: h=f.read(24)
+          assert h[:8]==b'\x89PNG\r\n\x1a\n'
+          assert unpack(">II",h[16:24])==(1450,960)
+          assert (root/"pasta-cycles-still.blend").stat().st_size>500000
+          assert json.loads((root/"QA.json").read_text())["frame_count"]==1
+          print("Single frame passed integrity and dimensions checks")
+          PY
+      - name: Save unretouched Cycles still and editable Blender scene
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pasta-cycles-single-frame-review
+          path: |
+            output/pasta-still/
+            assets/pasta/source-preview.jpg
+            assets/pasta/LICENSE-SOURCES.txt
+          if-no-files-found: warn
+          retention-days: 7
