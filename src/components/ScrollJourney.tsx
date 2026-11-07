@@ -15,7 +15,6 @@ export function ScrollJourney({finish}:{finish:Finish}){
  const root=useRef<HTMLElement>(null);
  const current=useRef(0);
  const progress=useRef(0);
- const queued=useRef(false);
  const [scene,setScene]=useState(0);
  const [visible,setVisible]=useState(true);
  const [reduce,setReduce]=useState(false);
@@ -32,21 +31,27 @@ export function ScrollJourney({finish}:{finish:Finish}){
    return()=>obs.disconnect();
  },[]);
  useEffect(()=>{
+   const rootElement=root.current;
+   if(!rootElement)return;
+   // Synchronous passive-scroll updates: never make chapter changes wait for a
+   // WebGL animation frame (which can be delayed on software GPUs).
    const update=()=>{
-     queued.current=false;
-     if(!root.current)return;
-     const rect=root.current.getBoundingClientRect();
-     const viewport=root.current.ownerDocument.documentElement.clientHeight;
-     const travel=Math.max(1,rect.height-viewport);
+     const rect=rootElement.getBoundingClientRect();
+     const viewportHeight=document.documentElement.clientHeight;
+     const travel=Math.max(1,rootElement.offsetHeight-viewportHeight);
      const next=reduce?0:Math.max(0,Math.min(1,-rect.top/travel));
      progress.current=next;
      const n=next<.23?0:next<.44?1:next<.78?2:3;
      if(current.current!==n){current.current=n;setScene(n)}
-     root.current.style.setProperty("--journey-progress",String(next));
+     rootElement.style.setProperty("--journey-progress",String(next));
    };
-   const tick=()=>{if(queued.current)return;queued.current=true;requestAnimationFrame(update)};
-   tick();window.addEventListener("scroll",tick,{passive:true});window.addEventListener("resize",tick,{passive:true});
-   return()=>{window.removeEventListener("scroll",tick);window.removeEventListener("resize",tick)};
+   update();
+   window.addEventListener("scroll",update,{passive:true});
+   window.addEventListener("resize",update,{passive:true});
+   return()=>{
+     window.removeEventListener("scroll",update);
+     window.removeEventListener("resize",update);
+   };
  },[reduce]);
  const travelTo=(n:number)=>{
    const r=root.current;if(!r)return;

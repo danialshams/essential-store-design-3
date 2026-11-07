@@ -130,7 +130,7 @@ export default function HeadphoneStage({finish,progress,visible}:Props){
     onPointerUp={(e)=>{gesture.current.active=false;orbit.current.dragging=false;try{e.currentTarget.releasePointerCapture(e.pointerId)}catch{}}}
     onPointerCancel={()=>{gesture.current.active=false;orbit.current.dragging=false}}
     onKeyDown={(e)=>{const key=e.key;if(!["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(key))return;e.preventDefault();if(key==="ArrowLeft")orbit.current.yaw-=.25;if(key==="ArrowRight")orbit.current.yaw+=.25;if(key==="ArrowUp")orbit.current.pitch=Math.max(-1.2,orbit.current.pitch-.16);if(key==="ArrowDown")orbit.current.pitch=Math.min(1.2,orbit.current.pitch+.16)}}>
-    <Canvas dpr={[1,1.5]} frameloop={visible?"always":"demand"} camera={{position:[0,.1,6.75],fov:38}} gl={{alpha:true,antialias:true,powerPreference:"high-performance"}} onCreated={({gl})=>{gl.toneMapping=THREE.ACESFilmicToneMapping;gl.toneMappingExposure=1.45;}}>
+    <Canvas dpr={[0.85,1.25]} frameloop={visible?"always":"demand"} camera={{position:[0,.1,6.75],fov:38}} gl={{alpha:true,antialias:true,powerPreference:"high-performance"}} onCreated={({gl})=>{gl.toneMapping=THREE.ACESFilmicToneMapping;gl.toneMappingExposure=1.45;}}>
       <color attach="background" args={["#090e17"]}/>
       <ambientLight intensity={1.2}/>
       <hemisphereLight args={["#eaf4ff","#24384d",2.1]}/>
