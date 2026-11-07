@@ -1,2 +1,2 @@
-import {Experience} from "@/components/Experience";
-export default function Page(){return <Experience/>}
+import ModelExperience from "@/components/ModelExperience";
+export default function Page(){return <ModelExperience/>}

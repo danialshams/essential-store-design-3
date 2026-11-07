@@ -1,9 +1,8 @@
 import type {Metadata, Viewport} from "next";
-import "./globals.css";
-import "./scroll.css";
+import "./model.css";
 
 export const metadata: Metadata = {
-  title:"AETHER — Edition 03 | Spatial Commerce",
+  title:"AETHER / 001 — Studio Headphone Model",
   description:"تجربه فروشگاه آینده؛ نمایش سه‌بعدی واقعی محصول، متریال‌های زنده و طراحی پرمیوم.",
   robots:{index:false,follow:false}
 };

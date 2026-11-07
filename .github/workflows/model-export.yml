@@ -1,0 +1,47 @@
+name: Build Blender 3D model (feature branch)
+on:
+  push:
+    branches:
+      - feature/blender-headphones-model-preview
+    paths:
+      - tools/build_studio_headphones.py
+      - .github/workflows/model-export.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  model:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Blender and glTF exporter dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends blender python3-numpy
+      - name: Build detailed Blender asset
+        run: blender -b --factory-startup --python-exit-code 1 --python tools/build_studio_headphones.py
+      - name: Compress asset without flattening independent parts
+        run: |
+          npx --yes @gltf-transform/cli optimize public/models/aether-studio.glb public/models/optimized.glb --compress draco --flatten false --join false --instance false --simplify false --palette false --texture-compress webp
+          mv public/models/optimized.glb public/models/aether-studio.glb
+          test -s public/models/aether-studio.glb
+      - name: Verify production build
+        run: |
+          npm install --no-audit --no-fund
+          npm run typecheck
+          npm run build
+      - name: Commit generated Blender GLB
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/models/aether-studio.glb
+          if ! git diff --cached --quiet; then
+            git commit -m "Add optimized Blender headphone GLB [skip ci]"
+            git push origin HEAD:feature/blender-headphones-model-preview
+          fi
+
