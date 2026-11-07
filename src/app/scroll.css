@@ -70,3 +70,94 @@
 .journey:focus-within .journey-rail-list button:focus-visible{outline:2px solid #dcefff;outline-offset:4px}
 .journey-drag-label{position:absolute;left:9%;bottom:22%;z-index:6;font-size:10px;letter-spacing:.03em;color:#a1bedb;pointer-events:none;opacity:.84}
 @media(max-width:760px){.journey-drag-label{left:6%;bottom:50%;font-size:9px}}
+
+/* AETHER Edition 03 — six-shot camera journey, mobile composition and free-orbit overlay */
+.journey{height:670svh;--journey-progress:0}
+.journey-sticky{min-height:600px}
+.journey-render{z-index:2;pointer-events:none;inset:0;transform:none}
+.cinema-three,.cinema-three canvas{width:100%;height:100%;display:block;pointer-events:none}
+.journey-topline{z-index:6}
+.journey-backdrop{background:radial-gradient(ellipse 52% 68% at 48% 43%,#233347 0%,#101925 49%,#090e17 100%)}
+.journey-backdrop:after{background:linear-gradient(90deg,transparent 43%,#060a13bc 96%),linear-gradient(0deg,#070b13,transparent 21%)}
+.journey-content{z-index:5}
+.journey-scene{right:6%;width:min(42%,540px);top:42%;transform:translateY(-25%) translateY(24px);transition:transform .65s cubic-bezier(.22,1,.36,1),opacity .58s ease,visibility .58s}
+.journey-scene.is-active{transform:translateY(-25%);opacity:1}
+.journey-scene h1{font-size:clamp(38px,4.9vw,75px);line-height:1.4}
+.journey-scene p{margin-bottom:22px;max-width:390px}
+.journey-chapter-detail{display:flex;gap:10px;align-items:center;font-size:11px;color:#abc6dd;margin:2px 0 19px}
+.journey-chapter-detail i{width:7px;height:7px;border-radius:50%;background:#a2c8e8;box-shadow:0 0 17px #83c8ed}
+.journey-details{bottom:22%}
+.orbit-launch{position:absolute;z-index:8;left:8.5%;bottom:12.5%;display:flex;align-items:center;gap:13px;background:rgba(213,229,247,.09);border:1px solid rgba(202,219,239,.35);box-shadow:inset 0 1px #ffffff0e;color:#dfecfb;border-radius:100px;padding:12px 17px;backdrop-filter:blur(12px);font-size:11px;transition:background .2s,transform .25s}
+.orbit-launch:hover{background:rgba(218,232,250,.19);transform:translateY(-2px)}
+.orbit-launch svg:first-child{color:#bed8f4}
+.orbit-launch svg:last-child{opacity:.65}
+.journey-rail-list{gap:7px}
+.journey-rail-list button{height:19px}
+.journey-rail-list button span{height:13px}
+.journey-rail-list button.active span{height:20px}
+.journey-rail{top:50%;gap:13px}
+.journey-progress span{will-change:transform}
+.inspector-overlay{position:fixed;inset:0;z-index:3000;background:rgba(2,5,10,.90);backdrop-filter:blur(24px);display:grid;place-items:center;padding:16px;animation:aetherFade .25s ease both}
+.inspector-panel{position:relative;display:flex;flex-direction:column;width:min(1100px,100%);height:min(790px,calc(100dvh - 30px));background:radial-gradient(ellipse at 50% 35%,#22354b,#101824 63%,#090f18);border:1px solid #a1bfd442;border-radius:25px;overflow:hidden;box-shadow:0 50px 160px #0009}
+.inspector-topbar{z-index:3;display:flex;justify-content:space-between;align-items:center;direction:ltr;padding:22px 27px;color:#a9c3d9;font:10px Arial,sans-serif;letter-spacing:.21em;border-bottom:1px solid #9db3c32f}
+.inspector-topbar button{width:43px;height:43px;display:grid;place-items:center;border-radius:50%;color:#f3f7fa;background:#e6f2ff0d;border:1px solid #a4bdd050}
+.inspector-topbar button:hover{background:#e6f2ff27}
+.inspector-stage{flex:1;min-height:0;position:relative;touch-action:none;cursor:grab}
+.inspector-stage:active{cursor:grabbing}
+.inspector-stage canvas{display:block;width:100%;height:100%;touch-action:none}
+.inspector-bottom{z-index:3;display:flex;justify-content:space-between;align-items:center;gap:20px;border-top:1px solid #9db3c32f;padding:21px 27px;color:#a7bfd4;font-size:11px}
+.inspector-bottom span,.inspector-bottom button{display:flex;align-items:center;gap:9px}
+.inspector-bottom button{border-radius:99px;padding:12px 18px;border:1px solid #a5bdd454;background:#d7e9fc1d;color:#eef6ff}
+.inspector-bottom button:hover{background:#d7e9fc36}
+@keyframes aetherFade{from{opacity:0}to{opacity:1}}
+@media(max-width:1100px){
+ .journey-scene{right:5%;width:49%}
+ .journey-render{transform:none}
+ .journey-scene h1{font-size:clamp(36px,5.2vw,62px)}
+ .journey-rail{left:2.7%}
+}
+@media(max-width:760px){
+ .journey{height:610svh}
+ .journey-sticky{height:100svh;min-height:570px}
+ .journey-render{top:7%;height:68%;width:100%;overflow:hidden;transform:none}
+ .journey-backdrop:after{background:linear-gradient(0deg,#080d16 0%,#080d16ed 19%,#080d1690 38%,transparent 65%)}
+ .journey-backdrop{background:radial-gradient(ellipse at 51% 36%,#243751,#0d1623 60%,#0b101a)}
+ .journey-topline{top:94px;right:5%;left:5%}
+ .journey-scene{top:auto;right:6%;left:6%;bottom:12.8%;width:88%;transform:translateY(18px)}
+ .journey-scene.is-active{transform:none}
+ .journey-scene h1{font-size:clamp(32px,8.9vw,47px);line-height:1.28;margin:10px 0 9px}
+ .journey-scene p{font-size:10.5px;line-height:2.15;margin-bottom:9px;max-width:365px}
+ .journey-kicker{font-size:8px}
+ .journey-chapter-detail{font-size:10px;margin-bottom:12px}
+ .journey-cta{font-size:10px;padding:12px 17px;min-width:143px}
+ .journey-rail{top:29%;left:2.6%;gap:7px}
+ .journey-details{bottom:51%;left:6%;transform:scale(.8);transform-origin:0 100%}
+ .orbit-launch{left:6%;bottom:43%;padding:10px 13px;gap:9px;font-size:10px}
+ .journey-footer{left:5%;right:5%;bottom:16px;padding-top:9px}
+ .journey-footer-mark{font-size:8px}
+ .journey-footer button{font-size:9px}
+ .inspector-overlay{padding:0}
+ .inspector-panel{width:100%;height:100dvh;border:0;border-radius:0}
+ .inspector-topbar{padding:20px 21px}
+ .inspector-bottom{padding:15px 21px 25px;flex-direction:column;align-items:stretch;gap:16px}
+ .inspector-bottom span{font-size:10px;line-height:1.9}
+ .inspector-bottom button{justify-content:center}
+}
+@media(max-width:390px){
+ .journey-scene{bottom:11.4%}
+ .journey-scene h1{font-size:31px}
+ .journey-scene p{font-size:9.8px}
+ .orbit-launch{bottom:45%;font-size:9px}
+ .journey-details{bottom:53%}
+}
+@media(prefers-reduced-motion:reduce){
+ .journey{height:100svh;min-height:650px}
+ .journey-scene{transition:none}
+ .inspector-overlay{animation:none}
+}
+/* Final visual QA — keep close-up subjects above copy on touch screens. */
+@media(max-width:760px){
+ .journey-render{top:6%;height:61%;isolation:isolate}
+ .journey-render:after{content:"";pointer-events:none;position:absolute;z-index:2;left:0;right:0;bottom:0;height:24%;background:linear-gradient(transparent,#080d1600 13%,#080d16 100%)}
+ .journey-scene{bottom:12.8%}
+}
