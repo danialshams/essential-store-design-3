@@ -1,6 +1,6 @@
 /* AETHER — scroll-bound real-time 3D product journey (replaces the former static hero) */
 .journey{height:490svh;position:relative;isolation:isolate;--journey-progress:0}
-.journey-sticky{position:sticky;inset-block-start:0;height:100svh;min-height:610px;overflow:hidden;isolation:isolate;background:#090e17;color:#ebf2fa}
+.journey-sticky{position:sticky;top:0;height:100svh;min-height:610px;overflow:hidden;isolation:isolate;background:#090e17;color:#ebf2fa}
 .journey-backdrop{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 42% 65% at 44% 45%,#1a283a,#080e17 80%),linear-gradient(120deg,#090e16,#141d29 55%,#080d14)}
 .journey-backdrop:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 30%,#05091188 78%,#050911cc),linear-gradient(0deg,#070b14 0%,transparent 28%);pointer-events:none}
 .journey-grid{position:absolute;inset:0;opacity:.24;background:repeating-linear-gradient(0deg,transparent,transparent 124px,#859fc01b 125px),repeating-linear-gradient(90deg,transparent,transparent 124px,#859fc01b 125px);mask-image:radial-gradient(ellipse 53% 76% at 46% 52%,black,transparent)}
@@ -64,4 +64,9 @@
 @media(prefers-reduced-motion:reduce){.journey{height:100svh;min-height:650px}.journey-scene{transition:none}.journey-sticky{position:relative}.journey-rail,.journey-footer button{display:none}}
 
 
-.journey-render{pointer-events:auto}.journey-canvas{touch-action:pan-y;cursor:grab;user-select:none}.journey-canvas:active{cursor:grabbing}
+.journey-render{pointer-events:auto}.journey-canvas{touch-action:pan-y;cursor:grab;user-select:none;overscroll-behavior-x:contain}.journey-canvas:active{cursor:grabbing}
+
+/* Keep the scrub chapter sticky relative to the document, not an overflow ancestor. */
+.journey:focus-within .journey-rail-list button:focus-visible{outline:2px solid #dcefff;outline-offset:4px}
+.journey-drag-label{position:absolute;left:9%;bottom:22%;z-index:6;font-size:10px;letter-spacing:.03em;color:#a1bedb;pointer-events:none;opacity:.84}
+@media(max-width:760px){.journey-drag-label{left:6%;bottom:50%;font-size:9px}}

@@ -1,7 +1,7 @@
 "use client";
 import {useEffect,useRef,useState} from "react";
 import dynamic from "next/dynamic";
-import {ArrowDownLeft,ArrowUpLeft,ChevronDown,MoveDown} from "lucide-react";
+import {ArrowDownLeft,ArrowUpLeft,ChevronDown} from "lucide-react";
 import type {Finish} from "./HeadphoneStage";
 const Stage=dynamic(()=>import("./HeadphoneStage"),{ssr:false,loading:()=> <div className="journey-model-loading"><span className="journey-load-ring"/><span>در حال آماده‌سازی مدل سه‌بعدی</span></div>});
 const SCENES=[
@@ -36,7 +36,8 @@ export function ScrollJourney({finish}:{finish:Finish}){
      queued.current=false;
      if(!root.current)return;
      const rect=root.current.getBoundingClientRect();
-     const travel=Math.max(1,rect.height-window.innerHeight);
+     const viewport=root.current.ownerDocument.documentElement.clientHeight;
+     const travel=Math.max(1,rect.height-viewport);
      const next=reduce?0:Math.max(0,Math.min(1,-rect.top/travel));
      progress.current=next;
      const n=next<.23?0:next<.44?1:next<.78?2:3;
@@ -52,7 +53,7 @@ export function ScrollJourney({finish}:{finish:Finish}){
    const top=window.scrollY+r.getBoundingClientRect().top;
    window.scrollTo({top:top+(r.offsetHeight-window.innerHeight)*n,behavior:"smooth"});
  };
- return <section ref={root} className="journey" id="top" aria-label="معرفی سینمایی محصول با اسکرول سه‌بعدی">
+ return <section ref={root} className="journey" id="product-journey" aria-label="معرفی سینمایی محصول با اسکرول سه‌بعدی">
    <div className="journey-sticky">
      <div className="journey-backdrop" aria-hidden="true"><div className="journey-grid"/><div className="journey-glow"/><div className="journey-orbit"/></div>
      <div className="journey-render"><Stage finish={finish} progress={progress} visible={visible}/></div>
@@ -69,6 +70,7 @@ export function ScrollJourney({finish}:{finish:Finish}){
         </div>}
       </div>)}
      </div>
+     <span className="journey-drag-label" aria-hidden="true">۳۶۰° / با ماوس یا لمس بچرخانید</span>
      <div className="journey-details" aria-hidden="true">
        <span className="journey-dot"><i/></span><div><strong>REAL-TIME 3D</strong><small>SCROLL TO EXPLORE</small></div>
      </div>

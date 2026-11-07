@@ -79,17 +79,24 @@ function Cup({side,palette,progress}:{side:-1|1;palette:{shell:string;trim:strin
     <mesh position={[side*.3,-.69,.16]} rotation={[0,Math.PI/2,0]}><cylinderGeometry args={[.034,.034,.13,16]}/><Metal color="#6e889f"/></mesh>
   </group>;
 }
-function Rig({finish,progress,drag}:{finish:Finish;progress:React.MutableRefObject<number>;drag:React.MutableRefObject<number>}){
+type OrbitState={yaw:number;pitch:number;dragging:boolean};
+function Rig({finish,progress,orbit,reduced}:{finish:Finish;progress:React.MutableRefObject<number>;orbit:React.MutableRefObject<OrbitState>;reduced:boolean}){
   const ref=useRef<THREE.Group>(null),look=useRef(new THREE.Vector3(0,.2,0)),cameraPos=useRef(new THREE.Vector3(0,0,6.75));
   const {camera}=useThree();const palette=PALETTE[finish];
+  const autoAngle=useRef(0);
   useFrame(({clock},delta)=>{
     const p=progress.current;const turn=phase(p,.04,.22);
     const macro=phase(p,.21,.37)*(1-phase(p,.40,.52));
     const split=phase(p,.46,.69)*(1-phase(p,.78,.97));
     const final=phase(p,.82,1);
+    // Independent idle orbit: manual gestures never fight the camera's chapter motion.
+    if(!reduced&&!orbit.current.dragging){
+      const speed=.27*(1-.50*phase(p,.24,.43)*(1-phase(p,.81,.94)));
+      autoAngle.current+=Math.min(delta,.05)*speed;
+    }
     if(ref.current){
-      ref.current.rotation.y=THREE.MathUtils.damp(ref.current.rotation.y,-.22+turn*.62-macro*.28+split*.24-final*.48+drag.current,3.2,delta);
-      ref.current.rotation.x=THREE.MathUtils.damp(ref.current.rotation.x,-.07-macro*.12+split*.065,3.2,delta);
+      ref.current.rotation.y=THREE.MathUtils.damp(ref.current.rotation.y,-.22+turn*.62-macro*.28+split*.24-final*.48+orbit.current.yaw+autoAngle.current,5.0,delta);
+      ref.current.rotation.x=THREE.MathUtils.damp(ref.current.rotation.x,-.07-macro*.12+split*.065+orbit.current.pitch,5.0,delta);
       ref.current.position.y=THREE.MathUtils.damp(ref.current.position.y,Math.sin(clock.elapsedTime*.48)*.024*(1-phase(p,.13,.28)),3.2,delta);
       const s=THREE.MathUtils.damp(ref.current.scale.x,1-macro*.02-split*.05,3.2,delta);ref.current.scale.setScalar(s);
     }
@@ -110,19 +117,20 @@ function Rig({finish,progress,drag}:{finish:Finish;progress:React.MutableRefObje
 }
 export default function HeadphoneStage({finish,progress,visible}:Props){
   const [reduced,setReduced]=useState(false);
-  const drag=useRef(0);
-  const gesture=useRef({x:0, initial:0, active:false});
+  const orbit=useRef<OrbitState>({yaw:0,pitch:0,dragging:false});
+  const gesture=useRef({x:0,y:0,initialYaw:0,initialPitch:0,active:false});
   useEffect(()=>{
     const m=window.matchMedia("(prefers-reduced-motion: reduce)");
     const change=()=>setReduced(m.matches);change();m.addEventListener("change",change);
     return()=>m.removeEventListener("change",change);
   },[]);
-  return <div className="journey-canvas" aria-label="مدل سه‌بعدی هدفون؛ با کشیدن افقی می‌توانید آن را بچرخانید"
-    onPointerDown={(e)=>{gesture.current={x:e.clientX,initial:drag.current,active:true};e.currentTarget.setPointerCapture(e.pointerId)}}
-    onPointerMove={(e)=>{if(!gesture.current.active)return;drag.current=THREE.MathUtils.clamp(gesture.current.initial+(e.clientX-gesture.current.x)*.0035,-1.2,1.2)}}
-    onPointerUp={(e)=>{gesture.current.active=false;try{e.currentTarget.releasePointerCapture(e.pointerId)}catch{}}}
-    onPointerCancel={()=>{gesture.current.active=false}}>
-    <Canvas dpr={[1,1.5]} frameloop={visible&&!reduced?"always":"demand"} camera={{position:[0,.1,6.75],fov:38}} gl={{alpha:true,antialias:true,powerPreference:"high-performance"}} onCreated={({gl})=>{gl.toneMapping=THREE.ACESFilmicToneMapping;gl.toneMappingExposure=1.45;}}>
+  return <div className="journey-canvas" role="group" tabIndex={0} aria-label="مدل سه‌بعدی هدفون؛ برای چرخش ۳۶۰ درجه درگ کنید. کلیدهای جهت‌دار هم کار می‌کنند."
+    onPointerDown={(e)=>{if(e.pointerType==="mouse"&&e.button!==0)return;gesture.current={x:e.clientX,y:e.clientY,initialYaw:orbit.current.yaw,initialPitch:orbit.current.pitch,active:true};orbit.current.dragging=true;e.currentTarget.setPointerCapture(e.pointerId)}}
+    onPointerMove={(e)=>{if(!gesture.current.active)return;orbit.current.yaw=gesture.current.initialYaw+(e.clientX-gesture.current.x)*.012;orbit.current.pitch=THREE.MathUtils.clamp(gesture.current.initialPitch+(e.clientY-gesture.current.y)*.008,-1.20,1.20)}}
+    onPointerUp={(e)=>{gesture.current.active=false;orbit.current.dragging=false;try{e.currentTarget.releasePointerCapture(e.pointerId)}catch{}}}
+    onPointerCancel={()=>{gesture.current.active=false;orbit.current.dragging=false}}
+    onKeyDown={(e)=>{const key=e.key;if(!["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(key))return;e.preventDefault();if(key==="ArrowLeft")orbit.current.yaw-=.25;if(key==="ArrowRight")orbit.current.yaw+=.25;if(key==="ArrowUp")orbit.current.pitch=Math.max(-1.2,orbit.current.pitch-.16);if(key==="ArrowDown")orbit.current.pitch=Math.min(1.2,orbit.current.pitch+.16)}}>
+    <Canvas dpr={[1,1.5]} frameloop={visible?"always":"demand"} camera={{position:[0,.1,6.75],fov:38}} gl={{alpha:true,antialias:true,powerPreference:"high-performance"}} onCreated={({gl})=>{gl.toneMapping=THREE.ACESFilmicToneMapping;gl.toneMappingExposure=1.45;}}>
       <color attach="background" args={["#090e17"]}/>
       <ambientLight intensity={1.2}/>
       <hemisphereLight args={["#eaf4ff","#24384d",2.1]}/>
@@ -134,7 +142,7 @@ export default function HeadphoneStage({finish,progress,visible}:Props){
         <Lightformer form="rect" intensity={5} position={[-5,0,2]} rotation={[0,Math.PI/3,0]} scale={[2,7,1]}/>
         <Lightformer form="rect" intensity={2} color="#abc7e8" position={[5,1,0]} rotation={[0,-Math.PI/2,0]} scale={[2,6,1]}/>
       </Environment>
-      <Rig finish={finish} progress={progress} drag={drag}/>
+      <Rig finish={finish} progress={progress} orbit={orbit} reduced={reduced}/>
     </Canvas>
   </div>;
 }
