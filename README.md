@@ -1,14 +1,21 @@
-# AETHER / Edition 03
+# AETHER / Edition 03 — Scroll-Cinematic Prototype
 
-A new, clean, one-page concept for premium spatial commerce, replacing the old Edition 03 storefront/prototype. This project is deliberately a visual demonstration, not an operational payment site. The existing GitHub repo and Vercel project are reused.
+Next.js 16 concept storefront for a premium spatial-commerce experience.
 
-- Next.js App Router, React 19, React Three Fiber, Drei, and custom CSS.
-- Live WebGL procedural headphone with actual 3D geometry, physical materials, lighting, hover parallax and drag to rotate.
-- No AI video, static photo slideshow, paid component dependency, or copied proprietary template.
-- Responsive Persian RTL design, overlay navigation, color selector, search overlay, accessible cart demo.
-- Motion respects prefers-reduced-motion. WebGL pauses when out of view and provides CSS fallback while loading.
-- All demo checkout interactions explicitly remain non-transactional.
+## Current prototype
+- Entirely procedural, **real-time 3D** headphone with independently modelled ear cushions, drivers, grilles, metallic shell covers, visible fasteners, metal arms and headband.
+- Studio-like physical environment reflections and materials (React Three Fiber, Drei Lightformers).
+- Four scroll-scrubbed acts: intro, macro inspection, component explosion, and exact reverse assembly.
+- Scroll progress is reversible in both directions; horizontal pointer-drag orbits the headset while vertical touch scroll remains native.
+- Accessible progress navigation, minimal motion fallback, canvas pause when out of view, mobile responsive layout.
+- Silver, graphite, and ice-blue finishes; original header, menus, and demo cart retained.
 
-Run with npm install, npm run typecheck, npm run build, npm run dev.
+This **procedural prototype is not a CAD-certified product design or photogrammetric 3D scan**. Production-grade close-up fidelity would require a licensed, multi-part model with authored PBR textures and professional environment lighting.
 
-The previous Edition 03 app and legacy storefront APIs were intentionally removed per owner request; reconnect the shared admin and checkout when converting this approved design prototype into a full production store.
+## Run
+npm install
+npm run typecheck
+npm run build
+npm run dev
+
+This is a public UX demo. **No real checkout, payments, or shipping**, and it does not depend on a third-party video generator. The next production stage is integrating the shared commerce admin and real product models.

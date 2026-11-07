@@ -1,0 +1,26 @@
+name: Validate AETHER 3D
+on:
+  push:
+    branches:
+      - main
+      - qa/aether-scroll-3d
+  pull_request:
+    branches:
+      - main
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Install from lockfile
+        run: npm ci
+      - name: Verify TypeScript
+        run: npm run typecheck
+      - name: Build production
+        run: npm run build
