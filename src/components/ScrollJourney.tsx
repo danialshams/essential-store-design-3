@@ -1,5 +1,6 @@
 "use client";
 import {useEffect,useRef,useState} from "react";
+import {flushSync} from "react-dom";
 import dynamic from "next/dynamic";
 import {ArrowDownLeft,ArrowUpLeft,ChevronDown} from "lucide-react";
 import type {Finish} from "./HeadphoneStage";
@@ -42,7 +43,9 @@ export function ScrollJourney({finish}:{finish:Finish}){
      const next=reduce?0:Math.max(0,Math.min(1,-rect.top/travel));
      progress.current=next;
      const n=next<.23?0:next<.44?1:next<.78?2:3;
-     if(current.current!==n){current.current=n;setScene(n)}
+     // Only four chapter transitions; commit each one synchronously so it is visible
+     // even when WebGL spends significant time rendering a frame.
+     if(current.current!==n){current.current=n;flushSync(()=>setScene(n))}
      rootElement.style.setProperty("--journey-progress",String(next));
    };
    update();
