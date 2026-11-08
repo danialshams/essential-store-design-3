@@ -1,0 +1,37 @@
+name: Build full-resolution opaque AirPods model
+on:
+  push:
+    branches: [fix/airpods-4k-opaque-mobile-trackball]
+    paths:
+      - scripts/build-airpods-4k.sh
+      - scripts/fix-gltf-alpha.py
+      - .github/workflows/airpods-opaque-4k.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build-model:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Convert source without scaling down 4K textures
+        run: bash scripts/build-airpods-4k.sh
+      - name: Typecheck and build the production website
+        run: |
+          npm install --no-audit --no-fund
+          npm run typecheck
+          npm run build
+      - name: Commit the optimized GLB only to the feature branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/models/airpods-max-4k-opaque.glb
+          if ! git diff --cached --quiet; then
+            git commit -m "Generate 4K opaque AirPods model [skip ci]"
+            git push origin HEAD:fix/airpods-4k-opaque-mobile-trackball
+          fi

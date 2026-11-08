@@ -1,103 +1,175 @@
 "use client";
 
-import {Suspense,useEffect,useMemo,useState} from "react";
-import {Canvas} from "@react-three/fiber";
-import {Environment,Lightformer,OrbitControls,useGLTF} from "@react-three/drei";
+import {Suspense,useEffect,useMemo,useRef,useState} from "react";
+import {Canvas,useFrame,useThree} from "@react-three/fiber";
+import {Environment,Lightformer,TrackballControls,useGLTF} from "@react-three/drei";
 import * as THREE from "three";
 
-const MOBILE_QUERY="(max-width: 760px)";
+const ASSET="/models/airpods-max-4k-opaque.glb";
+const MOBILE="(max-width: 760px)";
 
-function getMobile(){
-  return typeof window!=="undefined" && window.matchMedia(MOBILE_QUERY).matches;
+function isMobile(){
+  return typeof window!=="undefined" && window.matchMedia(MOBILE).matches;
 }
 
-function Headphones({mobile,onReady}:{mobile:boolean;onReady:()=>void}){
-  // Both assets are derived from the SAME user-uploaded GLB, not procedural geometry.
-  const path=mobile?"/models/airpods-max-mobile.glb":"/models/airpods-max-web.glb";
-  const {scene}=useGLTF(path);
-  const fitted=useMemo(()=>{
+function FirstRenderedFrame({onReady}:{onReady:()=>void}){
+  const signaled=useRef(false);
+  useFrame(()=>{
+    if(signaled.current)return;
+    signaled.current=true;
+    // Keep the Blender poster visible until the 3D scene has had a painted frame.
+    requestAnimationFrame(()=>requestAnimationFrame(onReady));
+  });
+  return null;
+}
+
+function ExactUploadedHeadphones({onReady}:{onReady:()=>void}){
+  const {scene}=useGLTF(ASSET);
+  const model=useMemo(()=>{
     const copy=scene.clone(true);
+    copy.traverse(obj=>{
+      if(!(obj instanceof THREE.Mesh))return;
+      const opaque=(source:THREE.Material)=>{
+        // The uploaded GLB declares alphaMode: BLEND for its entire mesh.
+        // Its geometry is solid. An opaque draw prevents rear parts showing
+        // through the earcups without changing any original PBR texture values.
+        const m=source.clone();
+        m.transparent=false;
+        m.opacity=1;
+        m.alphaTest=0;
+        m.depthWrite=true;
+        m.depthTest=true;
+        // The original material is double-sided: preserve its inner earcups.
+        m.side=THREE.DoubleSide;
+        m.needsUpdate=true;
+        return m;
+      };
+      obj.material=Array.isArray(obj.material)?obj.material.map(opaque):opaque(obj.material);
+    });
     const bbox=new THREE.Box3().setFromObject(copy);
     const center=bbox.getCenter(new THREE.Vector3());
-    const extent=bbox.getSize(new THREE.Vector3());
-    const scale=3.15/Math.max(extent.x,extent.y,extent.z,0.001);
-    // Translate the original geometry around the viewer's origin without altering
-    // UVs, normals, textures, or geometry topology.
+    const size=bbox.getSize(new THREE.Vector3());
+    const scale=3.15/Math.max(size.x,size.y,size.z,0.001);
     return {copy,center,scale};
   },[scene]);
-  useEffect(()=>{onReady()},[onReady,scene]);
-  return <group scale={fitted.scale}>
-    <group position={[-fitted.center.x,-fitted.center.y,-fitted.center.z]}>
-      <primitive object={fitted.copy}/>
+  return <>
+    <group scale={model.scale}>
+      <group position={[-model.center.x,-model.center.y,-model.center.z]}>
+        <primitive object={model.copy}/>
+      </group>
     </group>
-  </group>;
+    <FirstRenderedFrame onReady={onReady}/>
+  </>;
 }
 
-function StudioLighting(){
+// TrackballControls calculates motion in useFrame. With demand rendering,
+// pointer events alone do not schedule that frame. Request frames ONLY while
+// dragging, scrolling to zoom, and for a brief damping tail after release.
+function InteractionFramePump(){
+  const {gl,invalidate}=useThree();
+  useEffect(()=>{
+    const canvas=gl.domElement;
+    let active=false, endAt=0, frame=0;
+    const tick=()=>{
+      frame=0;
+      invalidate();
+      if(active||performance.now()<endAt)frame=requestAnimationFrame(tick);
+    };
+    const schedule=()=>{if(!frame)frame=requestAnimationFrame(tick)};
+    const start=()=>{active=true;schedule()};
+    const finish=()=>{active=false;endAt=performance.now()+850;schedule()};
+    const zoom=()=>{endAt=performance.now()+850;schedule()};
+    canvas.addEventListener("pointerdown",start,{passive:true});
+    canvas.addEventListener("touchstart",start,{passive:true});
+    window.addEventListener("pointerup",finish,{passive:true});
+    window.addEventListener("touchend",finish,{passive:true});
+    window.addEventListener("touchcancel",finish,{passive:true});
+    canvas.addEventListener("wheel",zoom,{passive:true});
+    return ()=>{
+      cancelAnimationFrame(frame);
+      canvas.removeEventListener("pointerdown",start);
+      canvas.removeEventListener("touchstart",start);
+      window.removeEventListener("pointerup",finish);
+      window.removeEventListener("touchend",finish);
+      window.removeEventListener("touchcancel",finish);
+      canvas.removeEventListener("wheel",zoom);
+    };
+  },[gl,invalidate]);
+  return null;
+}
+
+function NeutralStudio(){
   return <>
-    <ambientLight intensity={1.1}/>
-    <hemisphereLight args={["#dfe9f6","#182434",1.25]}/>
-    <directionalLight position={[5,7,8]} intensity={2.15} color="#f7fbff"/>
-    <directionalLight position={[-5,1,-5]} intensity={1.5} color="#afc9e7"/>
-    <Environment resolution={64} frames={1}>
-      <Lightformer form="rect" position={[2,4,4]} scale={[5,2.2,1]} intensity={3} rotation={[-.3,0,0]}/>
-      <Lightformer form="rect" position={[-4,1,-2]} scale={[2,5,1]} intensity={3} rotation={[0,Math.PI/2,0]}/>
+    <ambientLight intensity={1.25} color="#ffffff"/>
+    <hemisphereLight args={["#ffffff","#a7adb4",1.2]}/>
+    <directionalLight position={[4,6,7]} intensity={2.55} color="#ffffff"/>
+    <directionalLight position={[-5,0,-4]} intensity={1.75} color="#ffffff"/>
+    <Environment resolution={48} frames={1}>
+      <Lightformer form="rect" intensity={4.5} position={[2,4,5]} rotation={[-0.3,0,0]} scale={[4,2.2,1]}/>
+      <Lightformer form="rect" intensity={2.3} position={[-4,1,-2]} rotation={[0,Math.PI/2,0]} scale={[2.5,5,1]}/>
     </Environment>
   </>;
 }
 
 export default function Headphone360(){
-  const [mobile,setMobile]=useState(getMobile);
-  const [loaded,setLoaded]=useState(false);
+  const [mobile,setMobile]=useState(isMobile);
+  const [ready,setReady]=useState(false);
   const [failed,setFailed]=useState(false);
   useEffect(()=>{
-    const m=window.matchMedia(MOBILE_QUERY);
-    const handle=()=>{setMobile(m.matches);setLoaded(false)};
-    m.addEventListener("change",handle);
-    return ()=>m.removeEventListener("change",handle);
+    const media=window.matchMedia(MOBILE);
+    const refresh=()=>setMobile(media.matches);
+    refresh();
+    media.addEventListener("change",refresh);
+    return()=>media.removeEventListener("change",refresh);
   },[]);
 
-  return <main className="viewer-shell" aria-label="نمایشگر سه‌بعدی هدفون">
-    <div className="viewer-glow" aria-hidden="true"/>
-    <div className={"viewer-poster"+(loaded?" hidden":"")} role="presentation" aria-hidden="true"/>
-    <div className="viewer-canvas" aria-label="هدفون سه‌بعدی؛ برای چرخش، بکشید و برای زوم از دو انگشت یا چرخ ماوس استفاده کنید">
+  return <main className="viewer-shell" aria-label="نمایشگر سه‌بعدی هدفون AirPods Max">
+    <div className={"viewer-poster"+(ready?" hidden":"")} aria-hidden="true">
+      {/* SSR-rendered image: visible before JS, model download and shader compilation. */}
+      <picture>
+        <source media="(max-width: 760px)" srcSet="/images/airpods-poster-mobile.webp"/>
+        <img src="/images/airpods-poster-desktop.webp" alt="" fetchPriority="high" decoding="async"/>
+      </picture>
+    </div>
+    <div className="viewer-canvas" aria-label="مدل سه‌بعدی؛ لمس یا درگ به همه جهت‌ها، برای بزرگنمایی دو انگشت یا چرخ ماوس">
       <Canvas
-        dpr={mobile?[1,1.35]:[1,1.7]}
+        dpr={mobile?[1,1.45]:[1,1.8]}
         frameloop="demand"
-        camera={{position:mobile?[4,1.4,9.2]:[3.6,1.3,5.6],fov:38,near:0.05,far:100}}
-        gl={{alpha:true,antialias:!mobile,powerPreference:"high-performance"}}
-        onCreated={({gl})=>{gl.toneMapping=THREE.ACESFilmicToneMapping;gl.toneMappingExposure=1.6;}}
+        camera={{position:mobile?[4.0,1.35,9.0]:[3.6,1.3,5.8],fov:38,near:0.05,far:100}}
+        gl={{alpha:true,antialias:true,powerPreference:"high-performance"}}
+        onCreated={({gl})=>{
+          gl.toneMapping=THREE.ACESFilmicToneMapping;
+          gl.toneMappingExposure=1.42;
+        }}
         onError={()=>setFailed(true)}
       >
-        <StudioLighting/>
+        <NeutralStudio/>
         <Suspense fallback={null}>
-          <Headphones mobile={mobile} onReady={()=>setLoaded(true)}/>
+          <ExactUploadedHeadphones onReady={()=>setReady(true)}/>
         </Suspense>
-        <OrbitControls
+        <InteractionFramePump/>
+        <TrackballControls
           makeDefault
           target={[0,0,0]}
-          enableRotate
-          enableZoom
-          enablePan={false}
-          enableDamping
-          dampingFactor={0.09}
+          noPan
+          rotateSpeed={mobile?3.2:2.5}
+          zoomSpeed={mobile?1.3:1.0}
+          dynamicDampingFactor={0.13}
+          staticMoving={false}
           minDistance={2.4}
-          maxDistance={10}
-          minPolarAngle={0.02}
-          maxPolarAngle={Math.PI-0.02}
-          rotateSpeed={0.7}
-          zoomSpeed={0.9}
-          autoRotate={false}
+          maxDistance={12}
         />
       </Canvas>
     </div>
-    <div className="viewer-hint" aria-live="polite">
-      {failed?"نمایش سه‌بعدی در این مرورگر در دسترس نیست":loaded?"با انگشت یا ماوس بچرخانید · برای زوم دو انگشت":"در حال آماده‌سازی مدل سه‌بعدی..."}
-    </div>
+    {ready && !failed && <div className="viewer-hint">
+      با ماوس یا انگشت به همه جهت‌ها بچرخانید · زوم با دو انگشت
+    </div>}
+    {failed && <div className="viewer-hint" role="alert">نمایش سه‌بعدی روی این دستگاه در دسترس نیست</div>}
     <a className="viewer-credit" target="_blank" rel="noopener noreferrer"
-       href="https://sketchfab.com/3d-models/airpods-max-3400db28f6da41d08304ff20b29c3883">
-       3D model: DJM · CC BY
+      href="https://sketchfab.com/3d-models/airpods-max-3400db28f6da41d08304ff20b29c3883">
+      3D model by DJM · CC BY
     </a>
   </main>;
 }
 
+useGLTF.preload(ASSET);
