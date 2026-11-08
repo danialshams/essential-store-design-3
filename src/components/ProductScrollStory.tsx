@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect,useLayoutEffect,useRef,useState} from "react";
+import {useLayoutEffect,useRef,useState} from "react";
 import dynamic from "next/dynamic";
 import {gsap} from "gsap";
 import type {ReactNode} from "react";
@@ -121,7 +121,10 @@ export default function ProductScrollStory({children}:{children:ReactNode}){
       // The 3D mesh's own GestureGate prevents touchstart when the finger hits it.
       if(touchStart.blocked)return;
       const t=event.touches[0],dx=t.clientX-touchStart.x,dy=t.clientY-touchStart.y;
-      if(Math.abs(dy)<28||Math.abs(dy)<Math.abs(dx)*1.1)return;
+      if(Math.abs(dy)<Math.abs(dx)*1.1)return;
+      // Suppress native touch scrolling on the very first vertical movement.
+      if(Math.abs(dy)>5&&event.cancelable&&stepRef.current<5)event.preventDefault();
+      if(Math.abs(dy)<28)return;
       const direction:1|-1=dy<0?1:-1;
       if((direction===1&&stepRef.current===5&&!movingRef.current)||
          (direction===-1&&stepRef.current===0&&!movingRef.current))return;
@@ -139,7 +142,7 @@ export default function ProductScrollStory({children}:{children:ReactNode}){
       event.preventDefault();advance(direction);
     };
     paint(0);
-    const hash=()=>{if(window.location.hash==="#details"){window.scrollTo({top:0,behavior:"instant"});advance(1);}};
+    const hash=()=>{if(window.location.hash==="#details"){window.scrollTo({top:0,behavior:"auto"});advance(1);}};
     if(window.location.hash==="#details")requestAnimationFrame(hash);
     window.addEventListener("wheel",wheel,{passive:false});
     window.addEventListener("touchstart",touchStartHandler,{passive:true});
