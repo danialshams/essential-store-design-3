@@ -1,34 +1,26 @@
-# AETHER — exact AirPods Max source with 360° inspection
+# AETHER — Premium Digital Atelier
 
-The site uses the original free Sketchfab AirPods Max model uploaded by the owner to \`airpods-max-4k.glb\`.
+A responsive Next.js 16 + React 19 demonstration storefront with the approved cinematic Obsidian, Ivory and Silver design.
 
-## Rendering fixes
+Includes a full-height 3D hero, 2 curated collections, 4 products, editorial details, mobile menu, live product search, catalog, product detail routes, wishlist buttons and a locally persisted demonstration cart. Payments, checkout, email subscription and authentication are deliberately disabled pending real infrastructure.
 
-- **Same geometry, UVs, PBR materials and four 4096 × 4096 textures on desktop AND mobile.** There is no 1K mobile downgrade.
-- The original source declares \`alphaMode: BLEND\` on its only solid material. The build converts that to the glTF default \`OPAQUE\` before WebP encoding to prevent the rear of the earcups showing through. No UVs, geometry, or PBR shader parameters are changed.
-- Four full-resolution textures are lossily encoded to WebP at quality 96, reducing download size from ~14.6 MB to ~7 MB while keeping their original 4K resolution.
-- Small desktop and mobile first-frame posters captured from the **same WebGL scene** is visible at initial HTML paint; no loading text is shown.
-- On-demand rendering: the scene does not continuously render while idle. A gesture-controlled frame pump schedules frames while rotating/zooming and briefly during inertial damping.
-- Trackball controls allow **unrestricted vertical rotation**, plus horizontal rotation and touch/pinch or wheel zoom.
-- Neutral white softboxes and restrained tone mapping make lighting closer to the original PBR material. Lighting can alter perceived appearance without modifying the model.
+The original **user-uploaded** AirPods Max GLB remains the 3D product. 430 KB source-derived model first; the full 4K PBR textures load in the background, with no camera reset. Automatic rotation pauses during drag/touch and resumes after idle.
 
-## Commands
+## Perforated textile canopy
 
-\`\`\`sh
+The original source's base-color texture includes real transparent pixels defining the headband's woven cutouts. Earlier code set the *entire source material* to opaque, destroying those gaps. `scripts/fix-gltf-alpha.py` now selects glTF `MASK` (cutoff 0.42) rather than global `BLEND`: correct fabric holes, opaque aluminum body, and preserved source geometry/UVs/material textures. Rebuild with:
+
+```sh
 bash scripts/build-airpods-4k.sh
-npm install
-npm run typecheck
-npm run build
-\`\`\`
+bash scripts/build-instant-model.sh
+```
 
-## Credit
+## Demo media
 
-3D model [AirPods Max by DJM on Sketchfab](https://sketchfab.com/3d-models/airpods-max-3400db28f6da41d08304ff20b29c3883) — CC BY. The credit remains visible in the site.
+The storefront's watches, earbuds, speakers and featured-headphone photos are rendered from Blender source scripts shipped in this repository. They are illustrative, not claims of real products or inventory.
 
-## Scope
+## Attribution
 
-The app intentionally shows **only** a 360-degree model; there is no component separation, scroll-based feature presentation, login, or store UI.
+3D AirPods Max model: [DJM on Sketchfab, CC BY](https://sketchfab.com/3d-models/airpods-max-3400db28f6da41d08304ff20b29c3883). Credit is visible in the source and the site footer. Confirm licensing and provenance for commercial use.
 
-## Progressive 360 loading
-
-The first HTML paint shows the small existing still image. Then a 430 KB low-texture version of the **same** 46,640-triangle geometry becomes interactive. The original full-resolution 4K model loads afterwards, upgrading materials and geometry in place without resetting rotation, zoom or controls. The final visual quality is identical to the previous 4K release. The 3D renderer continues to run on demand, not continuously.
+Only release to `main` after successful GitHub Actions and production build.

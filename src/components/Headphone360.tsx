@@ -25,8 +25,13 @@ function FirstRenderedFrame({onReady}:{onReady:()=>void}){
   return null;
 }
 
-function ExactUploadedHeadphones({onReady,modelRef}:{onReady:()=>void;modelRef:React.RefObject<THREE.Object3D|null>}){
+function ExactUploadedHeadphones({onReady,modelRef,interactionRef}:{onReady:()=>void;modelRef:React.RefObject<THREE.Object3D|null>;interactionRef:React.RefObject<number>}){
   const {scene}=useGLTF(FAST_ASSET,"/draco/");
+  const rotator=useRef<THREE.Group>(null);
+  useFrame((_,delta)=>{if(!rotator.current||typeof document==="undefined"||document.hidden)return;
+    if(window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+    if(performance.now()>interactionRef.current)rotator.current.rotation.y+=Math.min(delta,.05)*.12;
+  });
   const model=useMemo(()=>{
     const copy=scene.clone(true);
     copy.traverse(obj=>{
@@ -38,7 +43,7 @@ function ExactUploadedHeadphones({onReady,modelRef}:{onReady:()=>void;modelRef:R
         const m=source.clone();
         m.transparent=false;
         m.opacity=1;
-        m.alphaTest=0;
+        m.alphaTest=0.42;
         m.depthWrite=true;
         m.depthTest=true;
         // The original material is double-sided: preserve its inner earcups.
@@ -59,7 +64,7 @@ function ExactUploadedHeadphones({onReady,modelRef}:{onReady:()=>void;modelRef:R
     return ()=>{modelRef.current=null};
   },[model.copy,modelRef]);
   return <>
-    <group scale={model.scale}>
+    <group ref={rotator} scale={model.scale}>
       <group position={[-model.center.x,-model.center.y,-model.center.z]}>
         <primitive object={model.copy}/>
       </group>
@@ -85,7 +90,7 @@ function UpgradeTo4K({modelRef,onComplete}:{modelRef:React.RefObject<THREE.Objec
       fast[i].geometry=full[i].geometry;
       const opaque=(m:THREE.Material)=>{
         const material=m.clone();
-        material.transparent=false;material.opacity=1;material.alphaTest=0;
+        material.transparent=false;material.opacity=1;material.alphaTest=0.42;
         material.depthWrite=true;material.depthTest=true;
         material.side=THREE.DoubleSide;
         material.needsUpdate=true;
@@ -104,36 +109,18 @@ function UpgradeTo4K({modelRef,onComplete}:{modelRef:React.RefObject<THREE.Objec
 // pointer events alone do not schedule that frame. Request frames ONLY while
 // dragging, scrolling to zoom, and for a brief damping tail after release.
 function InteractionFramePump(){
-  const {gl,invalidate}=useThree();
-  useEffect(()=>{
-    const canvas=gl.domElement;
-    let active=false, endAt=0, frame=0;
-    const tick=()=>{
-      frame=0;
-      invalidate();
-      if(active||performance.now()<endAt)frame=requestAnimationFrame(tick);
-    };
-    const schedule=()=>{if(!frame)frame=requestAnimationFrame(tick)};
-    const start=()=>{active=true;schedule()};
-    const finish=()=>{active=false;endAt=performance.now()+850;schedule()};
-    const zoom=()=>{endAt=performance.now()+850;schedule()};
-    canvas.addEventListener("pointerdown",start,{passive:true});
-    canvas.addEventListener("touchstart",start,{passive:true});
-    window.addEventListener("pointerup",finish,{passive:true});
-    window.addEventListener("touchend",finish,{passive:true});
-    window.addEventListener("touchcancel",finish,{passive:true});
-    canvas.addEventListener("wheel",zoom,{passive:true});
-    return ()=>{
-      cancelAnimationFrame(frame);
-      canvas.removeEventListener("pointerdown",start);
-      canvas.removeEventListener("touchstart",start);
-      window.removeEventListener("pointerup",finish);
-      window.removeEventListener("touchend",finish);
-      window.removeEventListener("touchcancel",finish);
-      canvas.removeEventListener("wheel",zoom);
-    };
-  },[gl,invalidate]);
-  return null;
+ const {gl,invalidate}=useThree();
+ useEffect(()=>{
+  const canvas=gl.domElement;let visible=true;let frame=0,last=0;
+  const reduced=window.matchMedia("(prefers-reduced-motion: reduce)");
+  const mobile=window.matchMedia("(max-width: 760px)");
+  const observer=new IntersectionObserver(entries=>{visible=entries[0]?.isIntersecting??false},{threshold:0});
+  observer.observe(canvas);
+  const tick=(now:number)=>{if(visible&&!document.hidden&&!reduced.matches){const fps=mobile.matches?29:16;
+    if(now-last>=fps){invalidate();last=now;}}frame=requestAnimationFrame(tick)};
+  frame=requestAnimationFrame(tick);
+  return ()=>{cancelAnimationFrame(frame);observer.disconnect()};
+ },[gl,invalidate]);return null;
 }
 
 function NeutralStudio(){
@@ -156,6 +143,7 @@ export default function Headphone360(){
   const [upgradeQueued,setUpgradeQueued]=useState(false);
   const [fullQuality,setFullQuality]=useState(false);
   const modelRef=useRef<THREE.Object3D|null>(null);
+  const interactionRef=useRef(0);
 
   // Avoid competing with the initial interactive render; download 4K after.
   useEffect(()=>{
@@ -180,7 +168,7 @@ export default function Headphone360(){
     return()=>media.removeEventListener("change",refresh);
   },[]);
 
-  return <main className="viewer-shell" data-quality={fullQuality?"4k":ready?"instant":"poster"} aria-label="نمایشگر سه‌بعدی هدفون AirPods Max">
+  return <div className="viewer-shell" data-quality={fullQuality?"4k":ready?"instant":"poster"} aria-label="نمایشگر سه‌بعدی هدفون AirPods Max">
     <div className={"viewer-poster"+(ready?" hidden":"")} aria-hidden="true">
       {/* SSR-rendered image: visible before JS, model download and shader compilation. */}
       <picture>
@@ -202,13 +190,15 @@ export default function Headphone360(){
       >
         <NeutralStudio/>
         <Suspense fallback={null}>
-          <ExactUploadedHeadphones modelRef={modelRef} onReady={()=>setReady(true)}/>
+          <ExactUploadedHeadphones modelRef={modelRef} interactionRef={interactionRef} onReady={()=>setReady(true)}/>
         </Suspense>
         {upgradeQueued && <Suspense fallback={null}>
           <UpgradeTo4K modelRef={modelRef} onComplete={()=>setFullQuality(true)}/>
         </Suspense>}
         <InteractionFramePump/>
         <TrackballControls
+          onStart={()=>{interactionRef.current=Number.POSITIVE_INFINITY}}
+          onEnd={()=>{interactionRef.current=performance.now()+2600}}
           makeDefault
           target={[0,0,0]}
           noPan
@@ -229,7 +219,7 @@ export default function Headphone360(){
       href="https://sketchfab.com/3d-models/airpods-max-3400db28f6da41d08304ff20b29c3883">
       3D model by DJM · CC BY
     </a>
-  </main>;
+  </div>;
 }
 
 useGLTF.preload(FAST_ASSET,"/draco/");

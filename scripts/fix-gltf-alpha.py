@@ -1,26 +1,36 @@
 #!/usr/bin/env python3
-"""Preserve the user's exact glTF mesh and 4K texture data; only correct the erroneous alpha BLEND mode."""
-import json,struct,sys
+"""Keep original AirPods Max 4K PBR maps, including the headband's true alpha cutouts."""
+import json
+import struct
+import sys
 from pathlib import Path
 
-src=Path(sys.argv[1])
-dst=Path(sys.argv[2])
-data=src.read_bytes()
-if data[:4]!=b"glTF" or struct.unpack_from("<I",data,4)[0]!=2:
-    raise ValueError("Expected binary glTF v2")
-json_length,chunk_type=struct.unpack_from("<II",data,12)
-if chunk_type!=0x4E4F534A:raise ValueError("No JSON chunk")
-j=json.loads(data[20:20+json_length])
-mats=j.get("materials",[])
-if not mats:raise ValueError("No material")
-for material in mats:
-    if material.get("alphaMode","OPAQUE")=="BLEND":
-        material["alphaMode"]="OPAQUE"
-new_json=json.dumps(j,ensure_ascii=False,separators=(",",":")).encode("utf-8")
-new_json+=b" " * (-len(new_json)%4)
-rest=data[20+json_length:]
-out=b"glTF"+struct.pack("<II",2,12+8+len(new_json)+len(rest))
-out+=struct.pack("<II",len(new_json),0x4E4F534A)+new_json+rest
-dst.parent.mkdir(parents=True,exist_ok=True)
-dst.write_bytes(out)
-print(f"Preserved {len(j.get('meshes',[]))} meshes and {len(j.get('images',[]))} embedded textures. Fixed alpha; wrote {dst}")
+source, destination = map(Path, sys.argv[1:3])
+raw = source.read_bytes()
+if raw[:4] != b"glTF" or struct.unpack_from("<I", raw, 4)[0] != 2:
+    raise ValueError("Expected a binary glTF 2.0 file")
+length, kind = struct.unpack_from("<II", raw, 12)
+if kind != 0x4E4F534A:
+    raise ValueError("The first chunk must be JSON")
+document = json.loads(raw[20:20+length])
+materials = document.get("materials", [])
+if not materials:
+    raise ValueError("Source model has no materials")
+for material in materials:
+    # Original Sketchfab alpha contains transparent pixels in its
+    # physically perforated textile canopy. The global BLEND setting
+    # made solid earcups incorrectly see-through. Alpha MASK retains
+    # genuine mesh holes while keeping cup/shell pixels fully opaque.
+    material["alphaMode"] = "MASK"
+    material["alphaCutoff"] = 0.42
+    material["doubleSided"] = True
+encoded = json.dumps(document, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+encoded += b" " * (-len(encoded) % 4)
+tail = raw[20+length:]
+output = (b"glTF" + struct.pack("<II", 2, 20+len(encoded)+len(tail))
+          + struct.pack("<II", len(encoded), 0x4E4F534A)
+          + encoded + tail)
+destination.parent.mkdir(parents=True, exist_ok=True)
+destination.write_bytes(output)
+print("Preserved", len(document.get("meshes", [])), "meshes and",
+      len(document.get("images", [])), "original images with alpha cutout")

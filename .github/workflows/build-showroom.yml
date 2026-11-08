@@ -1,0 +1,52 @@
+name: Generate AETHER premium showroom assets
+on:
+  push:
+    branches: [feature/aether-premium-homepage-canopy]
+    paths:
+      - scripts/fix-gltf-alpha.py
+      - scripts/build-airpods-4k.sh
+      - scripts/build-instant-model.sh
+      - scripts/render-site-images.py
+      - scripts/render-demo-products.py
+      - scripts/convert-showroom-images.py
+      - .github/workflows/build-showroom.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  generate-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install local rendering tools
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends blender python3-pil
+      - name: Rebuild source-faithful alpha-masked GLBs
+        run: |
+          bash scripts/build-airpods-4k.sh
+          bash scripts/build-instant-model.sh
+      - name: Generate original product demo photography
+        run: |
+          blender -b --factory-startup --python-exit-code 1 --python scripts/render-site-images.py
+          blender -b --factory-startup --python-exit-code 1 --python scripts/render-demo-products.py
+          python3 scripts/convert-showroom-images.py
+      - name: Validate TypeScript and production build
+        run: |
+          npm install --no-audit --no-fund
+          npm run typecheck
+          npm run build
+      - name: Commit generated assets into feature branch only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/models/airpods-max-4k-opaque.glb public/models/airpods-max-instant.glb public/media/
+          if ! git diff --cached --quiet; then
+            git commit -m "Add source-faithful mesh canopy and premium demo renders [skip ci]"
+            git push origin HEAD:feature/aether-premium-homepage-canopy
+          fi
