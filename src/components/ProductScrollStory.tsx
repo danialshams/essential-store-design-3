@@ -54,7 +54,8 @@ export default function ProductScrollStory({children}:{children:ReactNode}){
       const fade=1-smooth((p-.035)/.105);
       overlay.style.opacity=String(fade);
       overlay.style.visibility=fade<.001?"hidden":"visible";
-      overlay.style.pointerEvents=fade>.15?"auto":"none";
+      // Full-screen overlay must not intercept 3D gestures; interactive hero links opt-in individually.
+      overlay.style.pointerEvents="none";
       const next=chapterAt(p);
       if(next!==chapterRef.current){
         chapterRef.current=next;
