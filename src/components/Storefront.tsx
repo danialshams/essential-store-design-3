@@ -64,7 +64,12 @@ function add(id:string){setBasket(old=>({...old,[id]:(old[id]||0)+1}));setCartOp
 function change(id:string,diff:number){setBasket(old=>{const n={...old,[id]:Math.max(0,(old[id]||0)+diff)};if(n[id]===0)delete n[id];return n})}
 function toggle(id:string){setLiked(a=>a.includes(id)?a.filter(x=>x!==id):[...a,id])}
 function closePanel(kind:"menu"|"search"|"cart",after?:()=>void){
+ let completed=false;
+ let timeoutId:number|undefined;
  const finish=()=>{
+  if(completed)return;
+  completed=true;
+  if(timeoutId!==undefined)window.clearTimeout(timeoutId);
   if(kind==="menu")setMenu(false);
   if(kind==="search")setSearch(false);
   if(kind==="cart")setCartOpen(false);
@@ -75,6 +80,7 @@ function closePanel(kind:"menu"|"search"|"cart",after?:()=>void){
  if(!shade||!panel){finish();return;}
  gsap.killTweensOf([shade,panel]);
  const duration=window.matchMedia("(prefers-reduced-motion: reduce)").matches?.01:.34;
+ timeoutId=window.setTimeout(finish,660);
  gsap.timeline({onComplete:finish,defaults:{ease:"power3.inOut"}})
  .to(panel,kind==="search"?{autoAlpha:0,y:-18,scale:.98,duration}:{autoAlpha:0,xPercent:110,duration},0)
  .to(shade,{autoAlpha:0,duration:duration*.84},0);
