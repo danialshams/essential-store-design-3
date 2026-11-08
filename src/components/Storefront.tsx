@@ -9,6 +9,7 @@ import CinematicMotion from "./CinematicMotion";
 import {products,categoryNames,formatPrice,type Product} from "@/lib/catalog";
 
 const Viewer=dynamic(()=>import("./Headphone360"),{ssr:false,loading:()=> <div className="hero-loader" aria-hidden="true"><img src="/images/airpods-poster-desktop.webp" alt=""/></div>});
+const ProductScrollStory=dynamic(()=>import("./ProductScrollStory"),{ssr:false});
 type View="home"|"shop"|"product"|"about";
 type Basket=Record<string,number>;
 type Category="all"|Product["category"];
@@ -111,6 +112,8 @@ return <div className="aether-commerce" id="top">
 <div className="hero-bottom"><span>برای کشف بیشتر اسکرول کنید ↓</span><span>01 / 04 ━━━━━</span></div>
 </section>
 
+<ProductScrollStory/>
+
 <section className="collection-section" id="collections"><div className="collection-layout">
 <div className="collection-intro reveal"><small className="overline">01 / THE COLLECTION</small><h2>کالکشنی از<br/>انتخاب‌های خاص<span>.</span></h2><p>محصولاتی برای سلیقه‌ای که به زیبایی، ظرافت و کیفیت اهمیت می‌دهد.</p><Link href="/shop" className="dark-link">مشاهده همه کالکشن‌ها <ArrowUpRight size={17}/></Link></div>
 <div className="collection-cards">
@@ -123,26 +126,7 @@ return <div className="aether-commerce" id="top">
 <div className="view-more-mobile"><Link href="/shop">مشاهده همه محصولات <ArrowUpRight size={17}/></Link></div>
 </section>
 
-<section className="craft-section" id="details">
-<div className="craft-layout">
- <div className="craft-intro">
-  <small className="overline">03 / CRAFT IN DETAIL</small>
-  <h2>ظرافت، در هر تار و خط<span>.</span></h2>
-  <p>بافت توری هدبند و پرداخت ظریف فلز؛ جزئیاتی که کیفیت طراحی را تعریف می‌کنند.</p>
-  <Link href="/product/aether-one" className="craft-explore">کشف جزئیات محصول <ArrowUpRight size={18}/></Link>
- </div>
- <div className="craft-media">
-  <figure className="craft-card craft-knit" style={{backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)"}}>
-   <img src="/media/headphone-canopy.webp" alt="نمای ماکرو از توری واقعی هدبند هدفون" loading="lazy"/>
-   <figcaption className="craft-caption"><small>01 / MATERIAL</small><strong>توری ظریف و تنفس‌پذیر</strong></figcaption>
-  </figure>
-  <figure className="craft-card craft-metal" style={{backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)"}}>
-   <img src="/media/headphone-macro.webp" alt="نمای نزدیک از فلز و ایرکاپ هدفون" loading="lazy"/>
-   <figcaption className="craft-caption"><small>02 / PRECISION</small><strong>فلز، با پرداخت دقیق</strong></figcaption>
-  </figure>
- </div>
-</div>
-</section>
+
 </main>}
 
 {view==="shop"&&<main className="inner-page"><div className="inner-title"><small className="overline">THE AETHER COLLECTION</small><h1>کمتر، اما بهتر<span>.</span></h1><p>محصولات منتخب با طراحی دقیق و هویت ماندگار.</p></div><div className="filter-bar">{categories.map(c=><button key={c} className={category===c?"active":""} onClick={()=>setCategory(c)}>{c==="all"?"همه محصولات":categoryNames[c]}</button>)}</div><div className="item-grid">{visibleProducts.map(p=><ProductCard key={p.id} item={p} add={add} liked={liked.includes(p.id)} toggle={toggle}/>)}</div></main>}
@@ -156,7 +140,7 @@ return <div className="aether-commerce" id="top">
 <footer className="main-footer"><div className="footer-columns"><div className="footer-brand"><Logo/><p>طراحی برای تجربه‌ای آرام‌تر از تکنولوژی.</p></div><form className="footer-newsletter" onSubmit={e=>{e.preventDefault();setSubmitted(true)}}><label htmlFor="subscribe">از تازه‌ترین محصولات باخبر شوید</label><div><input id="subscribe" type="email" required placeholder="آدرس ایمیل" value={email} onChange={e=>{setEmail(e.target.value);setSubmitted(false)}}/><button aria-label="ثبت ایمیل" type="submit"><ArrowLeft size={18}/></button></div>{submitted&&<small>خبرنامه در نسخه نمایشی هنوز فعال نیست.</small>}</form><div className="footer-links"><b>فروشگاه</b><Link href="/shop">همه محصولات</Link><Link href="/shop?category=headphones">هدفون‌ها</Link><Link href="/shop?category=speakers">اسپیکرها</Link></div><div className="footer-links"><b>درباره ما</b><Link href="/about">داستان ما</Link><Link href="/#details">جزئیات طراحی</Link><a href="#contact" onClick={e=>{e.preventDefault();setMessage("اطلاعات ارتباطی در نسخه واقعی قابل تنظیم است.")}}>ارتباط با ما</a></div></div><div className="footer-bottom"><span>© 2026 AETHER · <a href="https://sketchfab.com/3d-models/airpods-max-3400db28f6da41d08304ff20b29c3883" target="_blank" rel="noopener noreferrer">3D: DJM / CC BY</a></span><span>این یک فروشگاه نمایشی است؛ خرید و قیمت‌ها واقعی نیستند.</span><a href="#top">بازگشت به بالا ↑</a></div></footer>
 
 {message&&<div className="demo-notice" role="status">{message}<button aria-label="بستن پیام" onClick={()=>setMessage("")}><X size={16}/></button></div>}
-{menu&&<div className="overlay-root" data-overlay="menu"><button className="shade" aria-label="بستن منو" onClick={()=>closePanel("menu")}/><aside className="drawer menu-drawer" style={{backdropFilter:"blur(28px)",WebkitBackdropFilter:"blur(28px)"}}><div className="drawer-top"><Logo/><button aria-label="بستن" onClick={()=>closePanel("menu")}><X/></button></div><nav><Link href="/" onClick={(e)=>{e.preventDefault();closePanel("menu",()=>router.push("/"))}}>خانه <ArrowUpRight/></Link><Link href="/shop" onClick={(e)=>{e.preventDefault();closePanel("menu",()=>router.push("/shop"))}}>محصولات <ArrowUpRight/></Link><Link href="/#collections" onClick={(e)=>{e.preventDefault();closePanel("menu",()=>router.push("/#collections"))}}>کالکشن‌ها <ArrowUpRight/></Link><Link href="/about" onClick={(e)=>{e.preventDefault();closePanel("menu",()=>router.push("/about"))}}>درباره ما <ArrowUpRight/></Link></nav></aside></div>}
+{menu&&<div className="overlay-root" data-overlay="menu"><button className="shade" aria-label="بستن منو" onClick={()=>closePanel("menu")}/><aside className="drawer menu-drawer" role="dialog" aria-modal="true" aria-label="منوی اصلی"><div className="drawer-top"><Logo/><button aria-label="بستن" onClick={()=>closePanel("menu")}><X/></button></div><nav><Link href="/" onClick={(e)=>{e.preventDefault();closePanel("menu",()=>router.push("/"))}}>خانه <ArrowUpRight/></Link><Link href="/shop" onClick={(e)=>{e.preventDefault();closePanel("menu",()=>router.push("/shop"))}}>محصولات <ArrowUpRight/></Link><Link href="/#collections" onClick={(e)=>{e.preventDefault();closePanel("menu",()=>router.push("/#collections"))}}>کالکشن‌ها <ArrowUpRight/></Link><Link href="/about" onClick={(e)=>{e.preventDefault();closePanel("menu",()=>router.push("/about"))}}>درباره ما <ArrowUpRight/></Link></nav></aside></div>}
 {search&&<div className="overlay-root" data-overlay="search"><button className="shade" aria-label="بستن جست‌وجو" onClick={()=>closePanel("search")}/><div className="search-dialog" style={{backdropFilter:"blur(28px)",WebkitBackdropFilter:"blur(28px)"}} role="dialog" aria-modal="true" aria-label="جست‌وجوی محصولات"><div className="drawer-top"><strong>جست‌وجو</strong><button aria-label="بستن" onClick={()=>closePanel("search")}><X/></button></div><div className="search-input"><Search size={21}/><input ref={searchInput} placeholder="دنبال چه چیزی هستید؟" value={query} onChange={e=>setQuery(e.target.value)}/></div><div className="search-results">{searchResults.map(p=><Link href={"/product/"+p.slug} key={p.id} onClick={(e)=>{e.preventDefault();closePanel("search",()=>router.push("/product/"+p.slug))}}><img src={p.image} alt=""/><span>{p.english}<small>{p.name}</small></span><ArrowUpRight size={17}/></Link>)}{searchResults.length===0&&<p>محصولی پیدا نشد.</p>}</div></div></div>}
 {cartOpen&&<div className="overlay-root" data-overlay="cart"><button className="shade" aria-label="بستن سبد" onClick={()=>closePanel("cart")}/><aside className="drawer cart-drawer" style={{backdropFilter:"blur(28px)",WebkitBackdropFilter:"blur(28px)"}} role="dialog" aria-modal="true" aria-label="سبد خرید"><div className="drawer-top"><h2>سبد خرید <span>{count}</span></h2><button aria-label="بستن" onClick={()=>closePanel("cart")}><X/></button></div><div className="cart-rows">{cartItems.length===0?<div className="empty-cart"><ShoppingBag size={36}/><h3>سبد خرید شما خالی است</h3><p>برای دیدن محصولات فروشگاه را مرور کنید.</p><button className="pill-primary" onClick={()=>closePanel("cart")}>ادامه خرید</button></div>:cartItems.map(p=><div className="cart-row" key={p.id}><img src={p.image} alt=""/><div><Link href={"/product/"+p.slug} onClick={(e)=>{e.preventDefault();closePanel("cart",()=>router.push("/product/"+p.slug))}}>{p.name}</Link><small>{formatPrice(p.price)}</small><div className="quantity"><button aria-label="کاهش" onClick={()=>change(p.id,-1)}><Minus size={14}/></button>{basket[p.id]}<button aria-label="افزایش" onClick={()=>change(p.id,1)}><Plus size={14}/></button></div></div></div>)}</div>{count>0&&<div className="cart-total"><div><span>جمع کل</span><b>{formatPrice(price)}</b></div><button className="pill-primary" onClick={()=>{setCartOpen(false);setMessage("پرداخت در نسخه نمایشی فعال نیست.")}}>ادامه به پرداخت <ArrowLeft size={18}/></button><small>پرداخت واقعی در نسخه نمایشی انجام نمی‌شود.</small></div>}</aside></div>}
 </div>;
