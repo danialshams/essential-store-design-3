@@ -18,7 +18,7 @@ type Interaction={
   yaw:number;pitch:number;zoom:number;zoomShown:number;
   used:boolean;lastEnd:number;returnStart:number;fromPitch:number;fromZoom:number;
 };
-const newInteraction=():Interaction=>({dragging:false,pointerId:null,lastX:0,lastY:0,pinch:0,yaw:0,pitch:0,zoom:1,zoomShown:1,used:false,lastEnd:0,returnStart:0,fromPitch:0,fromZoom:1});
+const newInteraction=():Interaction=>({dragging:false,pointerId:null,lastX:0,lastY:0,pinch:0,yaw:-.23,pitch:0,zoom:1,zoomShown:1,used:false,lastEnd:0,returnStart:0,fromPitch:0,fromZoom:1});
 
 function materialCopy(source:THREE.Material,anisotropy:number){
   const m=source.clone();
@@ -70,7 +70,7 @@ function Headphones({modelRef,modelGroupRef,interaction,onReady,progress}:{
     if(!group)return;
     const g=interaction.current,now=performance.now(),dt=Math.min(.06,delta);
     const p=progress.current;
-    const focused=THREE.MathUtils.smoothstep(p,.115,.225);
+    const focused=THREE.MathUtils.smoothstep(p,.115,.225)*(1-THREE.MathUtils.smoothstep(p,.91,.985));
     const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if(!g.dragging&&g.used&&now-g.lastEnd>=IDLE_DELAY){
       if(!g.returnStart){
@@ -83,12 +83,13 @@ function Headphones({modelRef,modelGroupRef,interaction,onReady,progress}:{
       g.zoom=g.fromZoom+(1-g.fromZoom)*ease;
       if(t>=1){g.pitch=0;g.zoom=1;g.used=false;g.returnStart=0;}
     }
-    if(!reduced&&!g.dragging&&!g.used&&p<.115)g.yaw+=AUTO_SPEED*dt;
+    if(!reduced&&!g.dragging&&!g.used&&(p<.115||p>.985))g.yaw+=AUTO_SPEED*dt;
     group.rotation.order="YXZ";
     const cinematicHeading=sampleJourneyShot(p).heading;
     const goalYaw=THREE.MathUtils.lerp(g.yaw,cinematicHeading,focused);
     group.rotation.y=THREE.MathUtils.damp(group.rotation.y,goalYaw,g.dragging?18:10,dt);
-    group.rotation.x=THREE.MathUtils.damp(group.rotation.x,g.pitch*(1-focused),g.dragging?18:10,dt);
+    group.rotation.x=THREE.MathUtils.damp(group.rotation.x,g.pitch*(1-focused)+.055*(1-focused),g.dragging?18:10,dt);
+    group.rotation.z=THREE.MathUtils.damp(group.rotation.z,-.105*(1-focused),9,dt);
     g.zoomShown=THREE.MathUtils.damp(g.zoomShown,THREE.MathUtils.lerp(g.zoom,1,focused),g.dragging?18:9,dt);
     group.scale.setScalar(model.scale*g.zoomShown);
   });
@@ -323,7 +324,7 @@ export default function Headphone360(props:JourneyRefs){
       <Canvas
         dpr={mobile?[.85,1.35]:[1,1.65]}
         frameloop="demand"
-        camera={{position:mobile?[3.4,1.12,7.7]:[3.0,1.09,5.1],fov:38,near:.05,far:100}}
+        camera={{position:mobile?[3.9,1.32,9.25]:[3.0,1.09,5.1],fov:38,near:.05,far:100}}
         gl={{alpha:true,antialias:true,powerPreference:"high-performance"}}
         onCreated={({gl})=>{gl.toneMapping=THREE.ACESFilmicToneMapping;gl.toneMappingExposure=1.25;}}
         onError={()=>setFailed(true)}>
