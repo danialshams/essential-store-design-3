@@ -85,6 +85,7 @@ function CameraStory({progress,chapter,stageRef,cardRef,dotRef,lineRef,mobile}:{
   const projected=useMemo(()=>new THREE.Vector3(),[]);
   const target=useMemo(()=>new THREE.Vector3(),[]);
   const frames=useRef(0);
+  const anchorOnMesh=useRef<{index:number;local:THREE.Vector3}|null>(null);
   const {copy,center,scale}=useMemo(()=>{
     const copy=scene.clone(true);
     const aniso=Math.min(8,gl.capabilities.getMaxAnisotropy());
@@ -142,12 +143,16 @@ function CameraStory({progress,chapter,stageRef,cardRef,dotRef,lineRef,mobile}:{
     if((frames.current++%2)!==0)return; // screen-space connector at max ~30Hz
     const stageRect=stage.getBoundingClientRect(),cardRect=card.getBoundingClientRect();
     if(stageRect.width===0||stageRect.height===0)return;
-    target.set(...CHAPTERS[active].anchor);
-    root.localToWorld(target);
-    // The marker terminates on the *visible mesh*, not at an arbitrary screen coordinate.
-    ray.set(camera.position,target.clone().sub(camera.position).normalize());
-    const hit=ray.intersectObject(root,true)[0];
-    projected.copy(hit?.point??target).project(camera);
+    if(anchorOnMesh.current?.index!==active){
+      target.set(...CHAPTERS[active].anchor);
+      root.localToWorld(target);
+      // One raycast per chapter, cached in model-local space to avoid expensive frame-by-frame intersection tests.
+      ray.set(camera.position,target.clone().sub(camera.position).normalize());
+      const hit=ray.intersectObject(root,true)[0];
+      const local=root.worldToLocal((hit?.point??target).clone());
+      anchorOnMesh.current={index:active,local};
+    }
+    projected.copy(root.localToWorld(anchorOnMesh.current.local.clone())).project(camera);
     if(projected.z>1||projected.z< -1)return;
     const x=(projected.x*.5+.5)*stageRect.width;
     const y=(-projected.y*.5+.5)*stageRect.height;
