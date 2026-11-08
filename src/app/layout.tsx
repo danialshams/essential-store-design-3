@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 export const viewport:Viewport={width:"device-width",initialScale:1,themeColor:"#090c12"};
 export default function RootLayout({children}:{children:React.ReactNode}){
-  return <html lang="fa" dir="rtl"><body>{children}</body></html>;
+  return <html lang="fa" dir="rtl"><head><link rel="preload" href="/models/airpods-preview-v1.glb" as="fetch" crossOrigin="anonymous" type="model/gltf-binary"/></head><body>{children}</body></html>;
 }

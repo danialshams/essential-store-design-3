@@ -1,0 +1,42 @@
+name: Build progressive AirPods model assets
+on:
+  push:
+    branches: [perf/airpods-instant-first-frame-4k]
+    paths:
+      - scripts/build-airpods-progressive.sh
+      - .github/workflows/airpods-progressive.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install verified KTX encoder
+        run: |
+          curl -fsSL --retry 3 --max-time 120 "https://github.com/KhronosGroup/KTX-Software/releases/download/v4.4.2/KTX-Software-4.4.2-Linux-x86_64.deb" -o /tmp/ktx.deb
+          echo "ca635ed489d8bf54fac8d7687056c651193de0740830a7738cc034adc63e3027  /tmp/ktx.deb" | sha256sum -c -
+          sudo dpkg -i /tmp/ktx.deb
+      - name: Generate low-latency preview and complete 4K GPU textures
+        run: bash scripts/build-airpods-progressive.sh
+      - name: Build check
+        run: |
+          npm install --no-audit --no-fund
+          npm run typecheck
+          npm run build
+      - name: Commit generated model files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/models/airpods-preview-v1.glb public/models/airpods-max-4k-ktx2-v1.glb
+          if ! git diff --cached --quiet; then
+            git commit -m "Generate optimized progressive 4K assets [skip ci]"
+            git push origin HEAD:perf/airpods-instant-first-frame-4k
+          fi
+

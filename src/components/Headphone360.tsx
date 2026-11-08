@@ -2,10 +2,12 @@
 
 import {Suspense,useEffect,useMemo,useRef,useState} from "react";
 import {Canvas,useFrame,useThree} from "@react-three/fiber";
+import {KTX2Loader} from "three-stdlib";
 import {Environment,Lightformer,TrackballControls,useGLTF} from "@react-three/drei";
 import * as THREE from "three";
 
-const ASSET="/models/airpods-max-4k-opaque.glb";
+const ASSET="/models/airpods-max-4k-ktx2-v1.glb";
+const PREVIEW="/models/airpods-preview-v1.glb";
 const MOBILE="(max-width: 760px)";
 
 function isMobile(){
@@ -23,8 +25,15 @@ function FirstRenderedFrame({onReady}:{onReady:()=>void}){
   return null;
 }
 
-function ExactUploadedHeadphones({onReady}:{onReady:()=>void}){
-  const {scene}=useGLTF(ASSET);
+function HeadphoneMesh({quality,onReady,visible=true}:{quality:"preview"|"full";onReady?:()=>void;visible?:boolean}){
+  const {gl}=useThree();
+  const ktx2=useMemo(()=>new KTX2Loader().setTranscoderPath("/basis/").detectSupport(gl),[gl]);
+  const {scene}=useGLTF(
+    quality==="full"?ASSET:PREVIEW,
+    false,
+    true, // meshopt enables 415KB preview with the original geometry
+    quality==="full"?(loader=>loader.setKTX2Loader(ktx2)):undefined
+  );
   const model=useMemo(()=>{
     const copy=scene.clone(true);
     copy.traverse(obj=>{
@@ -58,7 +67,25 @@ function ExactUploadedHeadphones({onReady}:{onReady:()=>void}){
         <primitive object={model.copy}/>
       </group>
     </group>
-    <FirstRenderedFrame onReady={onReady}/>
+    {onReady && <FirstRenderedFrame onReady={onReady}/>}
+  </>;
+}
+
+// The fast preview is interactive first. The exact same geometry, with final
+// full-resolution 4K KTX2 textures, is swapped in as soon as it is decoded.
+function ProgressiveHeadphones({onReady,onFullReady}:{onReady:()=>void;onFullReady:()=>void}){
+  const [fullReady,setFullReady]=useState(false);
+  return <>
+    {!fullReady && <Suspense fallback={null}>
+      <HeadphoneMesh quality="preview" onReady={onReady}/>
+    </Suspense>}
+    <Suspense fallback={null}>
+      <HeadphoneMesh quality="full" visible={fullReady} onReady={()=>{
+        setFullReady(true);
+        onFullReady();
+        onReady();
+      }}/>
+    </Suspense>
   </>;
 }
 
@@ -114,6 +141,7 @@ function NeutralStudio(){
 export default function Headphone360(){
   const [mobile,setMobile]=useState(isMobile);
   const [ready,setReady]=useState(false);
+  const [fullReady,setFullReady]=useState(false);
   const [failed,setFailed]=useState(false);
   useEffect(()=>{
     const media=window.matchMedia(MOBILE);
@@ -123,7 +151,7 @@ export default function Headphone360(){
     return()=>media.removeEventListener("change",refresh);
   },[]);
 
-  return <main className="viewer-shell" aria-label="نمایشگر سه‌بعدی هدفون AirPods Max">
+  return <main className="viewer-shell" data-model-quality={fullReady?"4k":"preview"} aria-label="نمایشگر سه‌بعدی هدفون AirPods Max">
     <div className={"viewer-poster"+(ready?" hidden":"")} aria-hidden="true">
       {/* SSR-rendered image: visible before JS, model download and shader compilation. */}
       <picture>
@@ -144,9 +172,7 @@ export default function Headphone360(){
         onError={()=>setFailed(true)}
       >
         <NeutralStudio/>
-        <Suspense fallback={null}>
-          <ExactUploadedHeadphones onReady={()=>setReady(true)}/>
-        </Suspense>
+        <ProgressiveHeadphones onReady={()=>setReady(true)} onFullReady={()=>setFullReady(true)}/>
         <InteractionFramePump/>
         <TrackballControls
           makeDefault
@@ -171,5 +197,3 @@ export default function Headphone360(){
     </a>
   </main>;
 }
-
-useGLTF.preload(ASSET);

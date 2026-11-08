@@ -1,30 +1,28 @@
-# AETHER — exact AirPods Max source with 360° inspection
+# AETHER — AirPods Max 360° model viewer
 
-The site uses the original free Sketchfab AirPods Max model uploaded by the owner to \`airpods-max-4k.glb\`.
+The exact headphone mesh and PBR textures from the owner's Sketchfab download are used. No procedural replacement, split components, storefront or scroll choreography.
 
-## Rendering fixes
+## Progressive start
 
-- **Same geometry, UVs, PBR materials and four 4096 × 4096 textures on desktop AND mobile.** There is no 1K mobile downgrade.
-- The original source declares \`alphaMode: BLEND\` on its only solid material. The build converts that to the glTF default \`OPAQUE\` before WebP encoding to prevent the rear of the earcups showing through. No UVs, geometry, or PBR shader parameters are changed.
-- Four full-resolution textures are lossily encoded to WebP at quality 96, reducing download size from ~14.6 MB to ~7 MB while keeping their original 4K resolution.
-- Small desktop and mobile first-frame posters captured from the **same WebGL scene** is visible at initial HTML paint; no loading text is shown.
-- On-demand rendering: the scene does not continuously render while idle. A gesture-controlled frame pump schedules frames while rotating/zooming and briefly during inertial damping.
-- Trackball controls allow **unrestricted vertical rotation**, plus horizontal rotation and touch/pinch or wheel zoom.
-- Neutral white softboxes and restrained tone mapping make lighting closer to the original PBR material. Lighting can alter perceived appearance without modifying the model.
+1. An already-rendered JPG/WebP poster is in the initial HTML markup.
+2. The **same headphone geometry** and reduced texture preview become interactive as soon as the small **~415KB** meshopt GLB is ready.
+3. The preview is seamlessly replaced by the final 4K texture version encoded with KTX2 BasisU (ETC1S), keeping 4096×4096 texture dimensions. The final asset is **~4.9MB**, vs. the previous WebP-encoded 4K model **~7.0MB**.
+4. The KTX2 format reduces GPU memory and transfer cost; compression is lossy, so individual texels are not bit-identical to the original download, though geometry and UVs are unchanged.
+5. Rotation is fully unrestricted and runs on demand, with brief damping frames after interaction. No spinner or waiting label.
 
-## Commands
+The smaller preview is temporary only; the 4K asset always replaces it, on mobile and desktop alike. Versioned GLB and transcoder endpoints use long-lived immutable caching. The poster remains visible until a rendered interactive scene is ready.
 
-\`\`\`sh
-bash scripts/build-airpods-4k.sh
+## Regenerate models
+
+Install KTX-Software 4.4.2 (the \`ktx\` executable), then:
+
+\`\`\`bash
+bash scripts/build-airpods-progressive.sh
 npm install
 npm run typecheck
 npm run build
 \`\`\`
 
-## Credit
+## Attribution
 
-3D model [AirPods Max by DJM on Sketchfab](https://sketchfab.com/3d-models/airpods-max-3400db28f6da41d08304ff20b29c3883) — CC BY. The credit remains visible in the site.
-
-## Scope
-
-The app intentionally shows **only** a 360-degree model; there is no component separation, scroll-based feature presentation, login, or store UI.
+3D source: [AirPods Max by DJM on Sketchfab](https://sketchfab.com/3d-models/airpods-max-3400db28f6da41d08304ff20b29c3883), CC BY.
