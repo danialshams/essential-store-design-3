@@ -1,15 +1,12 @@
-/* Single continuous 3D hero: the sticky scene is naturally bounded by its section.
-   No GSAP pin spacer, no second WebGL canvas and no sticky element escaping the journey. */
-.aether-journey{position:relative;z-index:0;isolation:isolate;height:580svh;background:#0b1018}
-.aether-journey .journey-sticky{position:sticky!important;top:0!important;width:100%!important;height:100svh!important;min-height:0!important;max-height:none!important;overflow:hidden!important;isolation:isolate}
+/* Each scroll/swipe is a discrete camera chapter. The hero occupies one viewport.
+   Wheel/touch input is captured while stages 0..4 are active. After the finale,
+   the page scrolls naturally; there are no pin spacers or overlapping sections. */
+.aether-journey{position:relative;isolation:isolate;z-index:0;height:100svh;min-height:0;background:#0b1018;scroll-margin-top:0}
+.aether-journey .journey-sticky{position:relative!important;top:auto!important;width:100%!important;height:100svh!important;min-height:0!important;max-height:none!important;overflow:hidden!important;isolation:isolate}
 .aether-journey .aether-hero .hero-visual{position:absolute!important;inset:0!important;top:0!important;right:0!important;bottom:0!important;left:0!important;width:100%!important;height:100%!important;max-width:none!important;transform-origin:center}
 .aether-journey .hero-visual .viewer-shell{height:100%!important;min-height:0!important;isolation:isolate}
 .aether-journey .hero-visual .viewer-canvas{z-index:2}
-.aether-journey .hero-visual .viewer-poster{
- z-index:4!important;visibility:visible;opacity:1;
- transition:none!important;
- background:radial-gradient(ellipse 56% 70% at 67% 42%,#293541 0%,#17202a 50%,#0b0f15 90%)!important;
-}
+.aether-journey .hero-visual .viewer-poster{z-index:4!important;visibility:visible;opacity:1;transition:none!important;background:radial-gradient(ellipse 56% 70% at 67% 42%,#293541 0%,#17202a 50%,#0b0f15 90%)!important}
 .aether-journey .hero-visual .viewer-poster.hidden{opacity:0!important;visibility:hidden!important;pointer-events:none}
 .aether-journey .hero-visual .viewer-poster picture{left:32%;right:0;width:68%;overflow:hidden}
 .aether-journey .hero-visual .viewer-poster img{object-fit:contain}
@@ -20,50 +17,61 @@
 .aether-journey .journey-hero-overlay .hero-halo{z-index:0}
 .aether-journey .journey-hero-overlay .hero-message{z-index:3}
 .aether-journey .journey-hero-overlay .hero-bottom{z-index:3}
-.journey-callout{position:absolute;inset:0;z-index:7;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .36s ease,visibility .36s ease}
+.journey-callout{position:absolute;inset:0;z-index:7;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .44s ease,visibility .44s ease}
 .journey-callout[data-active="true"]{opacity:1;visibility:visible}
 .journey-lines{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
-.journey-lines path{fill:none;stroke:#b4ddfa;stroke-width:1.15;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:5 5;opacity:.84}
-.journey-anchor{position:absolute;top:0;left:0;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:#ddf1ff;box-shadow:0 0 0 5px rgba(144,204,248,.16),0 0 22px #9dcef4}
+.journey-lines path{fill:none;stroke:#cce8ff;stroke-width:1.55;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;opacity:1;filter:drop-shadow(0 0 4px rgba(141,200,246,.39))}
+.journey-anchor{position:absolute;top:0;left:0;width:10px;height:10px;margin:-5px 0 0 -5px;border:2px solid #e7f6ff;border-radius:50%;background:#8acaf5;box-shadow:0 0 0 6px rgba(144,204,248,.15),0 0 23px #91cffb}
 .journey-detail-card{
- position:absolute;top:49%;right:7%;transform:translateY(-39%);width:min(33vw,410px);min-height:240px;
- padding:30px 32px 27px;border-radius:25px;direction:rtl;text-align:right;color:#f7faff;
- background:linear-gradient(134deg,rgba(52,68,85,.45),rgba(22,33,45,.29) 57%,rgba(64,81,103,.24));
- box-shadow:0 22px 60px rgba(0,0,0,.15),inset 0 1px rgba(245,250,255,.15);
- -webkit-backdrop-filter:blur(23px) saturate(1.45);backdrop-filter:blur(23px) saturate(1.45)
+ position:absolute;top:46%;right:6%;transform:translateY(-38%);width:min(29vw,370px);
+ padding:0!important;min-height:0!important;border:0!important;border-radius:0!important;
+ direction:rtl;text-align:right;color:#f7faff;background:none!important;box-shadow:none!important;
+ -webkit-backdrop-filter:none!important;backdrop-filter:none!important;
+ text-shadow:0 2px 13px rgba(5,13,23,.55)
 }
-.journey-detail-card:before{content:"";position:absolute;inset:1px 13px auto;height:1px;background:linear-gradient(90deg,transparent,#e8f3ff44,transparent)}
-.journey-detail-card small{display:block;color:#aac9de;font:600 10px Arial,sans-serif;direction:ltr;text-align:right;letter-spacing:.19em}
-.journey-detail-card h2{font-size:clamp(23px,2.15vw,35px);font-weight:500;line-height:1.5;letter-spacing:-.045em;margin:18px 0 12px}
-.journey-detail-card p{font-size:12px;line-height:2.5;color:#d1dce5;margin:0}
-.journey-index{display:flex;align-items:center;gap:12px;justify-content:flex-end;color:#dcebf5;font:11px Arial,sans-serif;margin-top:24px;direction:ltr}
-.journey-index i{height:1px;width:36px;background:linear-gradient(90deg,#99bdd8,transparent)}
+.journey-detail-card:before{display:none!important}
+.journey-detail-card small{display:block;color:#b7d8f0;font:600 10px Arial,sans-serif;direction:ltr;text-align:right;letter-spacing:.19em}
+.journey-detail-card h2{font-size:clamp(23px,2.35vw,36px);font-weight:500;line-height:1.47;letter-spacing:-.045em;margin:17px 0 10px}
+.journey-detail-card p{font-size:13px;line-height:2.3;color:#d5e3f0;margin:0}
+.journey-index{display:flex;align-items:center;gap:12px;justify-content:flex-end;color:#e3f0f9;font:11px Arial,sans-serif;margin-top:22px;direction:ltr}
+.journey-index i{height:1px;width:36px;background:linear-gradient(90deg,#b7d8ed,transparent)}
 .journey-chapter-rail{position:absolute;left:6%;bottom:43px;z-index:8;display:flex;gap:10px;opacity:0;transition:opacity .35s;pointer-events:none}
 .journey-chapter-rail[data-active="true"]{opacity:1}
 .journey-chapter-rail span{width:25px;height:2px;background:#7c92a94a;transition:width .35s,background .35s}
 .journey-chapter-rail span.active{width:50px;background:#b2d3ed}
-.journey-deep-link{position:absolute;top:112svh;left:0;width:1px;height:1px;pointer-events:none;scroll-margin-top:0}
-.aether-commerce .aether-journey~.collection-section{position:relative;z-index:1}
+.aether-commerce .aether-journey+.collection-section{position:relative;z-index:1}
 @media(max-width:1000px){
- .journey-detail-card{right:4%;width:38vw;padding:25px;min-height:215px}
- .journey-detail-card h2{font-size:25px}
+ .journey-detail-card{right:4%;width:33vw}
+ .journey-detail-card h2{font-size:24px}
+ .journey-detail-card p{font-size:11px}
 }
 @media(max-width:760px){
- .aether-journey{height:640svh}
+ .aether-journey{height:100svh}
  .aether-journey .journey-sticky{height:100svh!important;min-height:0!important}
- .journey-detail-card{top:auto;bottom:87px;left:16px;right:16px;width:auto;min-height:0;transform:none;padding:19px 21px 20px;border-radius:20px;background:linear-gradient(140deg,rgba(45,62,79,.61),rgba(20,31,43,.49));-webkit-backdrop-filter:blur(18px) saturate(1.35);backdrop-filter:blur(18px) saturate(1.35)}
- .journey-detail-card h2{font-size:23px;line-height:1.43;margin:10px 0 7px}
- .journey-detail-card p{font-size:11px;line-height:2.12}
+ .journey-detail-card{top:auto;bottom:76px;left:19px;right:19px;width:auto;max-width:370px;transform:none}
+ .journey-detail-card h2{font-size:clamp(21px,5.4vw,25px);line-height:1.42;margin:8px 0 5px}
+ .journey-detail-card p{font-size:11px;line-height:2.0;max-width:355px}
  .journey-detail-card small{font-size:9px}
- .journey-index{margin-top:12px}
- .journey-chapter-rail{left:20px;bottom:30px}
- .aether-journey .hero-visual .viewer-poster picture{left:0;right:0;width:100%;top:0;bottom:15%;height:85%}
- .journey-load-poster picture{inset:0 0 15%;width:100%;height:85%}
+ .journey-index{margin-top:9px}
+ .journey-chapter-rail{left:20px;bottom:28px}
+ .aether-journey .hero-visual .viewer-poster picture{left:0;right:0;width:100%;top:0;bottom:17%;height:83%}
+ .journey-load-poster picture{inset:0 0 17%;width:100%;height:83%}
+ /* A compact mobile hero leaves the entire upper screen available to the headphone. */
+ .aether-journey .hero-message{top:auto!important;bottom:57px!important;left:17px!important;right:17px!important;max-width:none!important;padding:14px 18px 16px!important;border-radius:19px!important}
+ .aether-journey .hero-message h1{font-size:clamp(37px,10vw,47px)!important;margin:9px 0 8px!important;line-height:1.05!important}
+ .aether-journey .hero-message .hero-eyebrow{font-size:8px!important}
+ .aether-journey .hero-message .hero-description{font-size:10px!important;line-height:1.7!important;margin:6px 0!important}
+ .aether-journey .hero-message .hero-buttons{margin-top:10px!important;gap:12px!important}
+ .aether-journey .hero-message .pill-primary{min-height:39px!important;padding:9px 17px!important;font-size:10px!important;gap:9px!important}
+ .aether-journey .hero-message .quiet-link{font-size:10px!important}
+ .aether-journey .hero-bottom{bottom:19px!important}
 }
 @media(max-width:380px){
- .journey-detail-card{bottom:77px;padding:16px 19px}
+ .journey-detail-card{bottom:68px;left:16px;right:16px}
  .journey-detail-card h2{font-size:20px}
  .journey-detail-card p{font-size:10px}
+ .aether-journey .hero-message{bottom:47px!important;padding:12px 15px 13px!important}
+ .aether-journey .hero-message h1{font-size:35px!important}
 }
 @media(prefers-reduced-motion:reduce){
  .aether-journey{height:100svh}

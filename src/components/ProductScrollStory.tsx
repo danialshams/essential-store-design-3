@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {useLayoutEffect,useRef,useState} from "react";
 import dynamic from "next/dynamic";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import type { ReactNode } from "react";
+import {gsap} from "gsap";
+import type {ReactNode} from "react";
 
 const Viewer=dynamic(()=>import("./Headphone360"),{
   ssr:false,
@@ -21,14 +20,10 @@ const CHAPTERS=[
   {eyebrow:"04 / DETAILS",title:"کنترل، با یک لمس",description:"محل قرارگیری کلیدها و اتصالات، با تمرکز بر دسترسی ساده و استفاده روزمره."}
 ] as const;
 
-function chapterAt(progress:number){
-  // Camera transitions have no callout: only the headphones remain on screen.
-  if(progress>=.235&&progress<.343)return 0;
-  if(progress>=.435&&progress<.55)return 1;
-  if(progress>=.625&&progress<.737)return 2;
-  if(progress>=.825&&progress<.9)return 3;
-  return -1;
-}
+/* 0 and 5 show the same complete hero; 1–4 pause on the actual camera shots.
+ * Wheel distance never drives the camera directly. A gesture advances ONE step.
+ */
+const STOPS=[0,.282,.492,.682,.854,1] as const;
 const clamp=(t:number)=>Math.max(0,Math.min(1,t));
 const smooth=(t:number)=>{const x=clamp(t);return x*x*(3-2*x)};
 
@@ -41,49 +36,136 @@ export default function ProductScrollStory({children}:{children:ReactNode}){
   const lineRef=useRef<SVGPathElement|null>(null);
   const progressRef=useRef(0);
   const chapterRef=useRef(-1);
+  const stepRef=useRef(0);
+  const movingRef=useRef(false);
   const [current,setCurrent]=useState(-1);
 
   useLayoutEffect(()=>{
     const section=sectionRef.current,overlay=heroOverlayRef.current;
-    if(!section||!overlay)return;
+    if(!section)return;
     if(window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;
-    gsap.registerPlugin(ScrollTrigger);
-    let alive=true;
-    const update=(p:number)=>{
+    if(!overlay)return;
+
+    let tween:gsap.core.Tween|null=null;
+    let wheelRelease:number|undefined;
+    let wheelGesture=false;
+    let lastWheel=0;
+    let coolDown=0;
+    let touchStart:{x:number;y:number;blocked:boolean}|null=null;
+    let touchUsed=false;
+    const paint=(p:number)=>{
       progressRef.current=p;
-      const fade=1-smooth((p-.035)/.105);
+      // The hero fully returns after chapter 4, as it also does in reverse at stage 0.
+      const fade=p<.16?1-smooth((p-.02)/.12):p>.91?smooth((p-.91)/.09):0;
       overlay.style.opacity=String(fade);
-      overlay.style.visibility=fade<.001?"hidden":"visible";
-      // Full-screen overlay must not intercept 3D gestures; interactive hero links opt-in individually.
+      overlay.style.visibility=fade<.005?"hidden":"visible";
       overlay.style.pointerEvents="none";
-      const next=chapterAt(p);
-      if(next!==chapterRef.current){
-        chapterRef.current=next;
-        setCurrent(next);
-      }
     };
-    // No GSAP pin: native CSS sticky is bounded by the tall section itself.
-    // When the last camera shot ends, the next page section flows normally.
-    const scroll=ScrollTrigger.create({
-      trigger:section,start:"top top",end:"bottom bottom",
-      invalidateOnRefresh:true,onUpdate:self=>update(self.progress),
-      onRefresh:self=>update(self.progress)
-    });
-    update(scroll.progress);
-    const refresh=()=>{if(alive)ScrollTrigger.refresh()};
-    document.fonts?.ready.then(refresh).catch(()=>{});
-    return()=>{alive=false;scroll.kill();overlay.style.opacity="";overlay.style.visibility="";overlay.style.pointerEvents="";};
+    const atTop=()=>{
+      const rect=section.getBoundingClientRect();
+      return rect.top>=-14&&rect.top<=14&&rect.bottom>=window.innerHeight-14;
+    };
+    const blocked=()=>Boolean(document.querySelector(".overlay-root"))||Boolean(document.querySelector("input:focus,textarea:focus,select:focus"));
+    const reveal=(step:number)=>{
+      const index=step>=1&&step<=4?step-1:-1;
+      chapterRef.current=index;setCurrent(index);
+    };
+    const advance=(direction:1|-1)=>{
+      if(movingRef.current)return;
+      const next=Math.max(0,Math.min(5,stepRef.current+direction));
+      if(next===stepRef.current)return;
+      movingRef.current=true;
+      // Callout disappears during the cinematic camera move, then attaches at the resting stop.
+      reveal(-1);
+      const from=progressRef.current,to=STOPS[next];
+      tween?.kill();
+      const duration=Math.max(.82,Math.min(1.34,.98+Math.abs(to-from)*.95));
+      tween=gsap.to(progressRef,{
+        current:to,
+        duration,
+        ease:"power2.inOut",
+        onUpdate:()=>paint(progressRef.current),
+        onComplete:()=>{
+          progressRef.current=to;
+          paint(to);
+          stepRef.current=next;
+          reveal(next);
+          movingRef.current=false;
+          coolDown=performance.now()+175;
+        }
+      });
+    };
+    const wheel=(event:WheelEvent)=>{
+      if(!atTop()||blocked()||event.ctrlKey||event.metaKey||Math.abs(event.deltaY)<.1)return;
+      const direction:1|-1=event.deltaY>0?1:-1;
+      if((direction===1&&stepRef.current===5&&!movingRef.current)||
+         (direction===-1&&stepRef.current===0&&!movingRef.current))return;
+      // Native scroll is captured only while there is a chapter to navigate.
+      if(event.cancelable)event.preventDefault();
+      lastWheel=performance.now();
+      if(wheelRelease)window.clearTimeout(wheelRelease);
+      wheelRelease=window.setTimeout(()=>{wheelGesture=false;},265);
+      if(wheelGesture||movingRef.current||lastWheel<coolDown)return;
+      wheelGesture=true;
+      advance(direction);
+    };
+    const touchStartHandler=(event:TouchEvent)=>{
+      if(event.touches.length!==1||!atTop()||blocked()){touchStart=null;return;}
+      const t=event.touches[0];
+      const target=event.target instanceof Element?event.target:null;
+      touchStart={x:t.clientX,y:t.clientY,blocked:event.defaultPrevented||Boolean(target?.closest("a,button,[role='button']"))};
+      touchUsed=false;
+    };
+    const touchMoveHandler=(event:TouchEvent)=>{
+      if(!touchStart||event.touches.length!==1||!atTop()||blocked())return;
+      // The 3D mesh's own GestureGate prevents touchstart when the finger hits it.
+      if(touchStart.blocked)return;
+      const t=event.touches[0],dx=t.clientX-touchStart.x,dy=t.clientY-touchStart.y;
+      if(Math.abs(dy)<Math.abs(dx)*1.1)return;
+      // Suppress native touch scrolling on the very first vertical movement.
+      if(Math.abs(dy)>5&&event.cancelable&&stepRef.current<5)event.preventDefault();
+      if(Math.abs(dy)<28)return;
+      const direction:1|-1=dy<0?1:-1;
+      if((direction===1&&stepRef.current===5&&!movingRef.current)||
+         (direction===-1&&stepRef.current===0&&!movingRef.current))return;
+      if(event.cancelable)event.preventDefault();
+      if(touchUsed)return;
+      touchUsed=true;
+      advance(direction);
+    };
+    const touchEndHandler=()=>{touchStart=null;touchUsed=false};
+    const keys=(event:KeyboardEvent)=>{
+      if(!atTop()||blocked()||event.altKey||event.ctrlKey||event.metaKey)return;
+      const direction:1|-1|0=event.key==="ArrowDown"||event.key==="PageDown"||event.key===" "?1:
+        event.key==="ArrowUp"||event.key==="PageUp"?-1:0;
+      if(!direction||((direction===1&&stepRef.current===5)||(direction===-1&&stepRef.current===0)))return;
+      event.preventDefault();advance(direction);
+    };
+    paint(0);
+    const hash=()=>{if(window.location.hash==="#details"){window.scrollTo({top:0,behavior:"auto"});advance(1);}};
+    if(window.location.hash==="#details")requestAnimationFrame(hash);
+    window.addEventListener("wheel",wheel,{passive:false});
+    window.addEventListener("touchstart",touchStartHandler,{passive:true});
+    window.addEventListener("touchmove",touchMoveHandler,{passive:false});
+    window.addEventListener("touchend",touchEndHandler);
+    window.addEventListener("touchcancel",touchEndHandler);
+    window.addEventListener("keydown",keys);
+    window.addEventListener("hashchange",hash);
+    return()=>{
+      tween?.kill();
+      if(wheelRelease)window.clearTimeout(wheelRelease);
+      window.removeEventListener("wheel",wheel);
+      window.removeEventListener("touchstart",touchStartHandler);
+      window.removeEventListener("touchmove",touchMoveHandler);
+      window.removeEventListener("touchend",touchEndHandler);
+      window.removeEventListener("touchcancel",touchEndHandler);
+      window.removeEventListener("keydown",keys);
+      window.removeEventListener("hashchange",hash);
+      overlay.style.opacity="";overlay.style.visibility="";overlay.style.pointerEvents="";
+    };
   },[]);
 
-  useEffect(()=>{
-    // Hash links target the detail stretch, without creating any second pinned layer.
-    if(location.hash==="#details"){
-      const node=document.getElementById("details");
-      requestAnimationFrame(()=>node?.scrollIntoView({block:"start"}));
-    }
-  },[]);
-
-  return <section className="aether-journey" ref={sectionRef} aria-label="معرفی سینمایی و جزئیات هدفون">
+  return <section className="aether-journey" id="details" ref={sectionRef} aria-label="معرفی سینمایی و جزئیات هدفون">
     <div className="aether-hero journey-sticky" ref={stageRef}>
       <div className="hero-visual">
         <Viewer progress={progressRef} chapter={chapterRef} stageRef={stageRef}
@@ -106,6 +188,5 @@ export default function ProductScrollStory({children}:{children:ReactNode}){
         {CHAPTERS.map((item,i)=><span key={item.eyebrow} className={current===i?"active":""}/>)}
       </div>
     </div>
-    <span className="journey-deep-link" id="details" aria-hidden="true"/>
   </section>;
 }

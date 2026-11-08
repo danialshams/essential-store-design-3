@@ -29,9 +29,6 @@ const SHOTS:Shot[]=[
   {at:.979,position:[3,1.09,5.1],look:[-.8,0,0],heading:0,fov:38},
   {at:1,position:[3,1.09,5.1],look:[-.8,0,0],heading:0,fov:38}
 ];
-const CONTACTS:V3[]=[
-  [.78,-.56,.22],[-.83,-.28,.33],[0,1.15,.04],[.72,-.88,.28]
-];
 const ease=(input:number)=>{
   const t=Math.max(0,Math.min(1,input));return t*t*(3-2*t);
 };
@@ -52,7 +49,7 @@ export function sampleJourneyShot(progress:number){
 export default function HeadphoneJourneyRig({refs,groupRef,mobile}:{
   refs:JourneyRefs;groupRef:RefObject<THREE.Group|null>;mobile:boolean;
 }){
-  const {camera}=useThree();
+  const {camera,gl}=useThree();
   const lastPos=useRef(new THREE.Vector3(3,1.09,5.1));
   const lastLook=useRef(new THREE.Vector3(-.8,0,0));
   const hitCache=useRef<{index:number;point:THREE.Vector3}|null>(null);
@@ -64,19 +61,25 @@ export default function HeadphoneJourneyRig({refs,groupRef,mobile}:{
     const shot=sampleJourneyShot(progress);
     const nextPos=new THREE.Vector3(...shot.position);
     const nextLook=new THREE.Vector3(...shot.look);
+    const focus=ease((progress-.12)/.10)*(1-ease((progress-.91)/.085));
+    // A 25% wider orbit leaves breathing room for the model and the external annotation.
+    const distance=nextPos.clone().sub(nextLook);
+    nextPos.addScaledVector(distance,.24*focus);
+    nextLook.x+=.68*focus; // product stays left of the right-side copy
     if(mobile){
-      const focus=ease((progress-.12)/.085)*(1-ease((progress-.91)/.075));
-      // Desktop product sits to the right; mobile product occupies the upper portion.
-      if(focus<.001)nextPos.set(3.4,1.12,7.7);
-      else nextPos.multiplyScalar(1.28-.08*focus);
-      nextLook.x=THREE.MathUtils.lerp(0,nextLook.x*.48,focus);
-      nextLook.y=THREE.MathUtils.lerp(-.58,nextLook.y-.53,focus);
+      if(focus<.001){
+        nextPos.set(3.9,1.32,9.25); // a visibly smaller hero headphone, above mobile headline
+        nextLook.set(0,-.52,0);
+      }else{
+        nextPos.multiplyScalar(1.16);
+        nextLook.set(nextLook.x*.40,nextLook.y-.49,0);
+      }
     }
     const k=1-Math.exp(-Math.min(.06,delta)*10);
     lastPos.current.lerp(nextPos,k);lastLook.current.lerp(nextLook,k);
     camera.position.copy(lastPos.current);camera.lookAt(lastLook.current);
     const pc=camera as THREE.PerspectiveCamera;
-    const desired=shot.fov+(mobile?7:0);
+    const desired=shot.fov+4*focus+(mobile?8:0);
     if(Math.abs(pc.fov-desired)>.025){pc.fov=THREE.MathUtils.lerp(pc.fov,desired,k);pc.updateProjectionMatrix();}
     const index=refs.chapter.current;
     const root=groupRef.current;
@@ -85,25 +88,36 @@ export default function HeadphoneJourneyRig({refs,groupRef,mobile}:{
     if(index<0||!root||!path||!dot||!stage||!card)return;
     if(++counter.current%2)return;
     const box=stage.getBoundingClientRect(),cardBox=card.getBoundingClientRect();
-    if(!box.width||!box.height)return;
+    const canvasBox=gl.domElement.getBoundingClientRect();
+    if(!box.width||!box.height||!canvasBox.width||!canvasBox.height)return;
     root.updateWorldMatrix(true,true);
     if(hitCache.current?.index!==index){
-      const target=new THREE.Vector3(...CONTACTS[index]);
-      root.localToWorld(target);
-      ray.set(camera.position,target.clone().sub(camera.position).normalize());
-      const hit=ray.intersectObject(root,true)[0];
-      const local=root.worldToLocal((hit?.point??target).clone());
-      hitCache.current={index,point:local};
+      // Shoot FROM THE ACTUAL CAMERA through the visible headphone silhouette.
+      // Never use authored approximate coordinates or fall back to a floating point.
+      let result:THREE.Intersection|undefined;
+      for(const [x,y] of [[0,0],[-.13,.02],[.13,.02],[-.25,.13],[.25,.13],[0,.23],[-.25,-.13],[.25,-.13],[0,-.22]]){
+        ray.setFromCamera(new THREE.Vector2(x,y),camera);
+        const meshHit=ray.intersectObject(root,true)[0];
+        if(meshHit){result=meshHit;break;}
+      }
+      if(!result){
+        path.style.opacity="0";
+        dot.style.opacity="0";
+        return;
+      }
+      hitCache.current={index,point:root.worldToLocal(result.point.clone())};
+      path.style.opacity="1";
+      dot.style.opacity="1";
     }
     scratch.copy(hitCache.current.point);
     root.localToWorld(scratch);
     scratch.project(camera);
     if(scratch.z< -1||scratch.z>1)return;
-    const x=(scratch.x*.5+.5)*box.width;
-    const y=(-scratch.y*.5+.5)*box.height;
+    const x=canvasBox.left-box.left+(scratch.x*.5+.5)*canvasBox.width;
+    const y=canvasBox.top-box.top+(-scratch.y*.5+.5)*canvasBox.height;
     const endX=mobile?cardBox.left-box.left+cardBox.width*.5:cardBox.left-box.left;
     const endY=mobile?cardBox.top-box.top+7:cardBox.top-box.top+cardBox.height*.48;
-    const turnX=mobile?x:endX-27,turnY=mobile?endY-28:y;
+    const turnX=mobile?x+(endX-x)*.23:endX-27,turnY=mobile?endY-32:y;
     dot.style.transform="translate3d("+x+"px,"+y+"px,0)";
     path.setAttribute("d","M "+x+" "+y+" L "+turnX+" "+turnY+" L "+endX+" "+endY);
   });
