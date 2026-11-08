@@ -17,3 +17,6 @@ body{background:#0c121b;color:#e2e8f0;font-family:Tahoma,Arial,sans-serif;-webki
 .viewer-credit{font-size:9px;left:12px}
 }
 @media(prefers-reduced-motion:reduce){.viewer-poster{transition:none}}
+
+/* Genuine mesh-only interaction; transparent canvas leaves page scrolling intact. */
+.viewer-canvas,.viewer-canvas canvas{touch-action:auto!important;overscroll-behavior:auto!important;cursor:default}

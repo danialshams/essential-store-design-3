@@ -24,3 +24,12 @@ The storefront's watches, earbuds, speakers and featured-headphone photos are re
 3D AirPods Max model: [DJM on Sketchfab, CC BY](https://sketchfab.com/3d-models/airpods-max-3400db28f6da41d08304ff20b29c3883). Credit is visible in the source and the site footer. Confirm licensing and provenance for commercial use.
 
 Only release to `main` after successful GitHub Actions and production build.
+
+## GSAP / glass showroom upgrade
+
+- Drag and zoom are gated by raycasts against the actual 3D mesh, not the full canvas. Touching empty space preserves native page scroll; the wheel zooms only when the cursor is over the headphones.
+- The model auto-rotates at about one revolution every 29 seconds. Manual gestures pause rotation; after two idle seconds, the pitch and zoom smoothly settle to neutral over about one second, while yaw continues from the last angle.
+- Cinema-style GSAP + ScrollTrigger animations introduce hero text line by line and stage cards, collections, detail photographs and footer. Motion is reduced when the system requests it.
+- The hero, product surfaces and panels use subtle semi-transparent glass. Hero type has a matte blur behind it for legibility.
+- The previous repetitive full-headphone section is replaced by two source-rendered macro photos of the actual woven canopy and aluminum details, cropped with object-fit: contain.
+- `npm run build` always installs local Draco decoder files before building through `prebuild`, avoiding missing 3D assets when lifecycle scripts are ignored.

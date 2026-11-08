@@ -1,7 +1,7 @@
 name: Validate AETHER premium site
 on:
   push:
-    branches: [main, feature/aether-premium-homepage-canopy]
+    branches: [main, feature/aether-gsap-glass-3d-gesture-fix]
   pull_request:
     branches: [main]
 permissions:
