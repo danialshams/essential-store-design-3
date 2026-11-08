@@ -53,7 +53,7 @@ useEffect(()=>{
   .fromTo(shade,{autoAlpha:0},{autoAlpha:1,duration:duration*.78},0)
   .fromTo(panel,active==="search"?{autoAlpha:0,y:-29,scale:.975}:{autoAlpha:0,xPercent:105},
     active==="search"?{autoAlpha:1,y:0,scale:1,duration}:{autoAlpha:1,xPercent:0,duration},0);
- return()=>enter.kill();
+ return()=>{enter.kill();};
 },[menu,search,cartOpen]);
 const count=Object.values(basket).reduce((a,b)=>a+b,0),cartItems=products.filter(p=>basket[p.id]>0);
 const price=products.reduce((sum,p)=>sum+p.price*(basket[p.id]||0),0);
