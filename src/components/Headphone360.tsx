@@ -4,6 +4,7 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
+import HeadphoneJourneyRig, {sampleJourneyShot,type JourneyRefs} from "./HeadphoneJourneyRig";
 
 const PREVIEW="/models/airpods-max-instant.glb";
 const ORIGINAL="/models/airpods-max-4k-opaque.glb";
@@ -41,9 +42,11 @@ function FirstFrame({onReady}:{onReady:()=>void}){
   });
   return null;
 }
-function Headphones({modelRef,interaction,onReady}:{
+function Headphones({modelRef,modelGroupRef,interaction,onReady,progress}:{
   modelRef:React.RefObject<THREE.Object3D|null>;
+  modelGroupRef:React.RefObject<THREE.Group|null>;
   interaction:React.RefObject<Interaction>;
+  progress:React.RefObject<number>;
   onReady:()=>void;
 }){
   const {scene}=useGLTF(PREVIEW,"/draco/");
@@ -61,11 +64,13 @@ function Headphones({modelRef,interaction,onReady}:{
     const size=box.getSize(new THREE.Vector3());
     return {copy,center,scale:3.15/Math.max(size.x,size.y,size.z,.001)};
   },[scene,gl]);
-  useEffect(()=>{modelRef.current=model.copy;return()=>{modelRef.current=null};},[model.copy,modelRef]);
+  useEffect(()=>{modelRef.current=model.copy;modelGroupRef.current=groupRef.current;return()=>{modelRef.current=null;modelGroupRef.current=null};},[model.copy,modelRef,modelGroupRef]);
   useFrame((_,delta)=>{
     const group=groupRef.current;
     if(!group)return;
     const g=interaction.current,now=performance.now(),dt=Math.min(.06,delta);
+    const p=progress.current;
+    const focused=THREE.MathUtils.smoothstep(p,.115,.225);
     const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if(!g.dragging&&g.used&&now-g.lastEnd>=IDLE_DELAY){
       if(!g.returnStart){
@@ -78,11 +83,13 @@ function Headphones({modelRef,interaction,onReady}:{
       g.zoom=g.fromZoom+(1-g.fromZoom)*ease;
       if(t>=1){g.pitch=0;g.zoom=1;g.used=false;g.returnStart=0;}
     }
-    if(!reduced&&!g.dragging&&!g.used)g.yaw+=AUTO_SPEED*dt;
+    if(!reduced&&!g.dragging&&!g.used&&p<.115)g.yaw+=AUTO_SPEED*dt;
     group.rotation.order="YXZ";
-    group.rotation.y=THREE.MathUtils.damp(group.rotation.y,g.yaw,g.dragging?18:8,dt);
-    group.rotation.x=THREE.MathUtils.damp(group.rotation.x,g.pitch,g.dragging?18:8,dt);
-    g.zoomShown=THREE.MathUtils.damp(g.zoomShown,g.zoom,g.dragging?18:8,dt);
+    const cinematicHeading=sampleJourneyShot(p).heading;
+    const goalYaw=THREE.MathUtils.lerp(g.yaw,cinematicHeading,focused);
+    group.rotation.y=THREE.MathUtils.damp(group.rotation.y,goalYaw,g.dragging?18:10,dt);
+    group.rotation.x=THREE.MathUtils.damp(group.rotation.x,g.pitch*(1-focused),g.dragging?18:10,dt);
+    g.zoomShown=THREE.MathUtils.damp(g.zoomShown,THREE.MathUtils.lerp(g.zoom,1,focused),g.dragging?18:9,dt);
     group.scale.setScalar(model.scale*g.zoomShown);
   });
   return <>
@@ -122,9 +129,10 @@ function FullQuality({modelRef,onReady}:{
  * never intercept page scrolling. Raycast against the actual headphone mesh
  * before consuming a pointer, touch or wheel gesture.
  */
-function GestureGate({modelRef,interaction}:{
+function GestureGate({modelRef,interaction,progress}:{
   modelRef:React.RefObject<THREE.Object3D|null>;
   interaction:React.RefObject<Interaction>;
+  progress:React.RefObject<number>;
 }){
   const {gl,camera}=useThree();
   useEffect(()=>{
@@ -143,7 +151,7 @@ function GestureGate({modelRef,interaction}:{
       return ray.intersectObject(root,true).length>0;
     };
     const begin=(x:number,y:number,id:number)=>{
-      if(!hit(x,y))return false;
+      if(progress.current>.075||!hit(x,y))return false;
       state.dragging=true;state.pointerId=id;
       state.lastX=x;state.lastY=y;state.pinch=0;
       state.used=true;state.lastEnd=performance.now();state.returnStart=0;
@@ -180,7 +188,8 @@ function GestureGate({modelRef,interaction}:{
       try{canvas.releasePointerCapture(e.pointerId)}catch{}
     };
     const wheel=(e:WheelEvent)=>{
-      if(!hit(e.clientX,e.clientY))return; // otherwise native scroll
+      // Wheel scroll is reserved for the camera story; Ctrl/Meta+wheel zooms the model in the idle hero.
+      if(progress.current>.075||!(e.ctrlKey||e.metaKey)||!hit(e.clientX,e.clientY))return;
       if(e.cancelable)e.preventDefault();
       state.used=true;state.lastEnd=performance.now();state.returnStart=0;
       const unit=e.deltaMode===1?16:e.deltaMode===2?160:1;
@@ -244,7 +253,7 @@ function GestureGate({modelRef,interaction}:{
       canvas.removeEventListener("touchend",endTouch,true);
       canvas.removeEventListener("touchcancel",endTouch,true);
     };
-  },[gl,camera,modelRef,interaction]);
+  },[gl,camera,modelRef,interaction,progress]);
   return null;
 }
 function VisibleFramePump(){
@@ -278,13 +287,14 @@ function Studio(){
     </Environment>
   </>;
 }
-export default function Headphone360(){
+export default function Headphone360(props:JourneyRefs){
   const [mobile,setMobile]=useState(typeof window!=="undefined"&&window.matchMedia(MOBILE).matches);
   const [ready,setReady]=useState(false);
   const [queued,setQueued]=useState(false);
   const [full,setFull]=useState(false);
   const [failed,setFailed]=useState(false);
   const modelRef=useRef<THREE.Object3D|null>(null);
+  const modelGroupRef=useRef<THREE.Group|null>(null);
   const interaction=useRef<Interaction>(newInteraction());
   const onReady=useCallback(()=>setReady(true),[]);
   const onFull=useCallback(()=>setFull(true),[]);
@@ -311,16 +321,17 @@ export default function Headphone360(){
     </picture></div>
     <div className="viewer-canvas">
       <Canvas
-        dpr={mobile?[1,1.45]:[1,1.8]}
+        dpr={mobile?[.85,1.35]:[1,1.65]}
         frameloop="demand"
         camera={{position:mobile?[3.4,1.12,7.7]:[3.0,1.09,5.1],fov:38,near:.05,far:100}}
         gl={{alpha:true,antialias:true,powerPreference:"high-performance"}}
         onCreated={({gl})=>{gl.toneMapping=THREE.ACESFilmicToneMapping;gl.toneMappingExposure=1.25;}}
         onError={()=>setFailed(true)}>
         <Studio/>
-        <Suspense fallback={null}><Headphones modelRef={modelRef} interaction={interaction} onReady={onReady}/></Suspense>
+        <Suspense fallback={null}><Headphones modelRef={modelRef} modelGroupRef={modelGroupRef} interaction={interaction} progress={props.progress} onReady={onReady}/></Suspense>
         {queued&&<Suspense fallback={null}><FullQuality modelRef={modelRef} onReady={onFull}/></Suspense>}
-        <GestureGate modelRef={modelRef} interaction={interaction}/>
+        <GestureGate modelRef={modelRef} interaction={interaction} progress={props.progress}/>
+        <HeadphoneJourneyRig refs={props} groupRef={modelGroupRef} mobile={mobile}/>
         <VisibleFramePump/>
       </Canvas>
     </div>
