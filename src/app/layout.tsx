@@ -2,8 +2,8 @@ import type {Metadata, Viewport} from "next";
 import "./model.css";
 
 export const metadata: Metadata = {
-  title:"AETHER / 001 — Studio Headphone Model",
-  description:"تجربه فروشگاه آینده؛ نمایش سه‌بعدی واقعی محصول، متریال‌های زنده و طراحی پرمیوم.",
+  title:"AirPods Max — 360° Model Viewer",
+  description:"نمایش سه‌بعدی هدفون AirPods Max با قابلیت چرخش آزاد ۳۶۰ درجه.",
   robots:{index:false,follow:false}
 };
 export const viewport:Viewport={width:"device-width",initialScale:1,themeColor:"#090c12"};

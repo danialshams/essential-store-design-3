@@ -1,0 +1,38 @@
+name: Generate optimized AirPods Max assets
+on:
+  push:
+    branches:
+      - feature/airpods-max-360-only
+    paths:
+      - scripts/optimize-airpods.sh
+      - .github/workflows/optimize-airpods.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  optimize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Generate optimized web models from user's uploaded file
+        run: bash scripts/optimize-airpods.sh
+      - name: Check production build and TypeScript
+        run: |
+          npm install --no-audit --no-fund
+          npm run typecheck
+          npm run build
+      - name: Commit the two optimized outputs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/models/airpods-max-web.glb public/models/airpods-max-mobile.glb
+          if ! git diff --cached --quiet; then
+            git commit -m "Add optimized AirPods Max 360 assets [skip ci]"
+            git push origin HEAD:feature/airpods-max-360-only
+          fi
+

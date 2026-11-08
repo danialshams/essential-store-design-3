@@ -1,34 +1,20 @@
-# AETHER / Object 001 — 3D Headphone Preview
+# AETHER — model-only AirPods Max viewer
 
-A focused model approval page: one **custom Blender-designed** over-ear headphone, with a live 360-degree product inspector and six scroll-driven camera shots. No store navigation, checkout, cards, or videos are shown.
+This experiment displays **the exact model uploaded by the owner** to \`airpods-max-4k.glb\`; no procedural geometry or part-separation is used.
 
-## Model
+- 360-degree one-page orbit with pointer/touch input, scroll/pinch zoom and damping.
+- No store UI, scroll scene choreography, or automatic explosion.
+- Mobile GLB uses the same mesh with WebP 1K textures (~2.5 MB), desktop 2K (~3.2 MB), keeping the full original 4K file unchanged.
+- Static still-image placeholder is derived from an earlier Blender render of this uploaded asset.
+- On-demand WebGL render loop; no perpetual scroll animation.
+- Model: [AirPods Max — DJM (Sketchfab, CC BY)](https://sketchfab.com/3d-models/airpods-max-3400db28f6da41d08304ff20b29c3883). Attribution shown in the viewer. Verify asset's provenance before commercial distribution.
 
-- Source: \`tools/build_studio_headphones.py\` (Blender 4.5/5.0; reproducible).
-- Output: \`public/models/aether-studio.glb\`.
-- Separate named animation groups: \`HEADBAND\`, \`HINGE_L/R\`, \`SHELL_L/R\`, \`DRIVER_L/R\`, \`CUSHION_L/R\`.
-- Multi-material geometry for sculpted aluminum shells, stainless steel, suspended woven canopy, fabric foam cushions, mechanical hinge, driver and vents.
-- Site runs with React Three Fiber + Drei and a compressed Draco GLB. Local Draco decoder assets are bundled during \`npm install\` by \`scripts/copy-draco.mjs\`; no foreign CDN required at runtime.
-
-## UX
-
-One page, six scroll stops. Each shot uses distinct camera position, aim and FOV. Final shot reassembles the cup; the inspect button allows unconstrained horizontal orbit and pinch-to-zoom. Vertical touch scrolling never competes with the orbit gesture because orbit mode is explicit. Reduced-motion mode provides the overview rather than pinning a long animation.
-
-## Limits
-
-This is an original **AirPods-Max-inspired studio concept**, not an official Apple model or exact CAD measurement. The materials and mesh are crafted for a browser-rendered portfolio; photo-accurate replica textures would require reference photos, professional UV/baking and visual review on a calibrated screen.
-
-## Commands
-
-\`\`\`sh
+To regenerate web variants from the original download:
+\`\`\`bash
+bash scripts/optimize-airpods.sh
 npm install
 npm run typecheck
 npm run build
-npm run dev
-# To regenerate geometry:
-blender -b --factory-startup --python-exit-code 1 --python tools/build_studio_headphones.py
-npx @gltf-transform/cli optimize public/models/aether-studio.glb public/models/temp.glb --compress draco --flatten false --join false --instance false --simplify false --palette false
-mv public/models/temp.glb public/models/aether-studio.glb
 \`\`\`
 
-No paid third-party UI component, stock render or video generator is used.
+Note: this is a low-overhead 360-degree inspection experience, not a fully interactive component-explosion scene.
