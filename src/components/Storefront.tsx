@@ -1,15 +1,13 @@
 "use client";
 import {useEffect,useRef,useState} from "react";
 import Link from "next/link";
-import dynamic from "next/dynamic";
+import ProductScrollStory from "./ProductScrollStory";
 import {useParams,useRouter} from "next/navigation";
 import {ArrowLeft,ArrowRight,ArrowUpRight,Heart,Menu,Minus,Plus,Search,ShoppingBag,UserRound,X,Rotate3D} from "lucide-react";
 import {gsap} from "gsap";
 import CinematicMotion from "./CinematicMotion";
 import {products,categoryNames,formatPrice,type Product} from "@/lib/catalog";
 
-const Viewer=dynamic(()=>import("./Headphone360"),{ssr:false,loading:()=> <div className="hero-loader" aria-hidden="true"><img src="/images/airpods-poster-desktop.webp" alt=""/></div>});
-const ProductScrollStory=dynamic(()=>import("./ProductScrollStory"),{ssr:false});
 type View="home"|"shop"|"product"|"about";
 type Basket=Record<string,number>;
 type Category="all"|Product["category"];
@@ -99,9 +97,8 @@ return <div className="aether-commerce" id="top">
 </div></div></header>
 
 {view==="home"&&<main>
-<section className="aether-hero" aria-label="معرفی AETHER">
+<ProductScrollStory>
 <div className="hero-halo" aria-hidden="true"/>
-<div className="hero-visual"><Viewer/></div>
 <div className="hero-message" style={{backdropFilter:"blur(16px) saturate(1.16)",WebkitBackdropFilter:"blur(16px) saturate(1.16)"}}>
 <span className="overline hero-eyebrow">P R E M I U M &nbsp; A U D I O</span>
 <h1 aria-label="Sound, reimagined."><span className="hero-line-wrap"><span className="hero-line">Sound,</span></span><span className="hero-line-wrap"><span className="hero-line">reimagined<span>.</span></span></span></h1>
@@ -110,9 +107,7 @@ return <div className="aether-commerce" id="top">
 </div>
 
 <div className="hero-bottom"><span>برای کشف بیشتر اسکرول کنید ↓</span><span>01 / 04 ━━━━━</span></div>
-</section>
-
-<ProductScrollStory/>
+</ProductScrollStory>
 
 <section className="collection-section" id="collections"><div className="collection-layout">
 <div className="collection-intro reveal"><small className="overline">01 / THE COLLECTION</small><h2>کالکشنی از<br/>انتخاب‌های خاص<span>.</span></h2><p>محصولاتی برای سلیقه‌ای که به زیبایی، ظرافت و کیفیت اهمیت می‌دهد.</p><Link href="/shop" className="dark-link">مشاهده همه کالکشن‌ها <ArrowUpRight size={17}/></Link></div>
