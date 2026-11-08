@@ -16,7 +16,7 @@
 .journey-load-poster{position:absolute;inset:0;background:radial-gradient(ellipse 56% 70% at 67% 42%,#293541 0%,#17202a 50%,#0b0f15 90%);display:grid;place-items:center}
 .journey-load-poster picture{position:absolute;inset:0 0 0 32%;width:68%;height:100%}
 .journey-load-poster img{width:100%;height:100%;object-fit:contain}
-.aether-journey .journey-hero-overlay{position:absolute;inset:0;z-index:5;isolation:isolate;pointer-events:auto;will-change:opacity}
+.aether-journey .journey-hero-overlay{position:absolute;inset:0;z-index:5;isolation:isolate;pointer-events:none;will-change:opacity}
 .aether-journey .journey-hero-overlay .hero-halo{z-index:0}
 .aether-journey .journey-hero-overlay .hero-message{z-index:3}
 .aether-journey .journey-hero-overlay .hero-bottom{z-index:3}
