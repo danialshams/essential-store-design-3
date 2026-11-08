@@ -5,7 +5,9 @@ import {Canvas,useFrame,useThree} from "@react-three/fiber";
 import {Environment,Lightformer,TrackballControls,useGLTF} from "@react-three/drei";
 import * as THREE from "three";
 
-const ASSET="/models/airpods-max-4k-opaque.glb";
+// Same uploaded 3D geometry: fast textures first, 4K quality in background.
+const FAST_ASSET="/models/airpods-max-instant.glb";
+const FULL_ASSET="/models/airpods-max-4k-opaque.glb";
 const MOBILE="(max-width: 760px)";
 
 function isMobile(){
@@ -23,8 +25,8 @@ function FirstRenderedFrame({onReady}:{onReady:()=>void}){
   return null;
 }
 
-function ExactUploadedHeadphones({onReady}:{onReady:()=>void}){
-  const {scene}=useGLTF(ASSET);
+function ExactUploadedHeadphones({onReady,modelRef}:{onReady:()=>void;modelRef:React.RefObject<THREE.Object3D|null>}){
+  const {scene}=useGLTF(FAST_ASSET,"/draco/");
   const model=useMemo(()=>{
     const copy=scene.clone(true);
     copy.traverse(obj=>{
@@ -52,6 +54,10 @@ function ExactUploadedHeadphones({onReady}:{onReady:()=>void}){
     const scale=3.15/Math.max(size.x,size.y,size.z,0.001);
     return {copy,center,scale};
   },[scene]);
+  useEffect(()=>{
+    modelRef.current=model.copy;
+    return ()=>{modelRef.current=null};
+  },[model.copy,modelRef]);
   return <>
     <group scale={model.scale}>
       <group position={[-model.center.x,-model.center.y,-model.center.z]}>
@@ -60,6 +66,38 @@ function ExactUploadedHeadphones({onReady}:{onReady:()=>void}){
     </group>
     <FirstRenderedFrame onReady={onReady}/>
   </>;
+}
+
+// Upgrade geometry and materials on the EXISTING object without remounting
+// the controls, preserving the user's current rotation and zoom.
+function UpgradeTo4K({modelRef,onComplete}:{modelRef:React.RefObject<THREE.Object3D|null>;onComplete:()=>void}){
+  const {scene}=useGLTF(FULL_ASSET,"/draco/");
+  const {invalidate}=useThree();
+  useEffect(()=>{
+    const target=modelRef.current;
+    if(!target)return;
+    const fast:THREE.Mesh[]=[];
+    const full:THREE.Mesh[]=[];
+    target.traverse(obj=>{if(obj instanceof THREE.Mesh)fast.push(obj)});
+    scene.traverse(obj=>{if(obj instanceof THREE.Mesh)full.push(obj)});
+    if(fast.length!==full.length||fast.length===0)return;
+    for(let i=0;i<fast.length;i++){
+      fast[i].geometry=full[i].geometry;
+      const opaque=(m:THREE.Material)=>{
+        const material=m.clone();
+        material.transparent=false;material.opacity=1;material.alphaTest=0;
+        material.depthWrite=true;material.depthTest=true;
+        material.side=THREE.DoubleSide;
+        material.needsUpdate=true;
+        return material;
+      };
+      const sourceMaterial=full[i].material;
+      fast[i].material=Array.isArray(sourceMaterial)?sourceMaterial.map(opaque):opaque(sourceMaterial);
+    }
+    invalidate();
+    onComplete();
+  },[scene,modelRef,invalidate,onComplete]);
+  return null;
 }
 
 // TrackballControls calculates motion in useFrame. With demand rendering,
@@ -115,6 +153,25 @@ export default function Headphone360(){
   const [mobile,setMobile]=useState(isMobile);
   const [ready,setReady]=useState(false);
   const [failed,setFailed]=useState(false);
+  const [upgradeQueued,setUpgradeQueued]=useState(false);
+  const [fullQuality,setFullQuality]=useState(false);
+  const modelRef=useRef<THREE.Object3D|null>(null);
+
+  // Avoid competing with the initial interactive render; download 4K after.
+  useEffect(()=>{
+    if(!ready)return;
+    const win=window as Window & {
+      requestIdleCallback?: (callback:()=>void,options?:{timeout:number})=>number;
+      cancelIdleCallback?: (id:number)=>void;
+    };
+    if(win.requestIdleCallback&&win.cancelIdleCallback){
+      const id=win.requestIdleCallback(()=>setUpgradeQueued(true),{timeout:1400});
+      return ()=>win.cancelIdleCallback?.(id);
+    }
+    const id=window.setTimeout(()=>setUpgradeQueued(true),350);
+    return ()=>window.clearTimeout(id);
+  },[ready]);
+
   useEffect(()=>{
     const media=window.matchMedia(MOBILE);
     const refresh=()=>setMobile(media.matches);
@@ -123,7 +180,7 @@ export default function Headphone360(){
     return()=>media.removeEventListener("change",refresh);
   },[]);
 
-  return <main className="viewer-shell" aria-label="نمایشگر سه‌بعدی هدفون AirPods Max">
+  return <main className="viewer-shell" data-quality={fullQuality?"4k":ready?"instant":"poster"} aria-label="نمایشگر سه‌بعدی هدفون AirPods Max">
     <div className={"viewer-poster"+(ready?" hidden":"")} aria-hidden="true">
       {/* SSR-rendered image: visible before JS, model download and shader compilation. */}
       <picture>
@@ -145,8 +202,11 @@ export default function Headphone360(){
       >
         <NeutralStudio/>
         <Suspense fallback={null}>
-          <ExactUploadedHeadphones onReady={()=>setReady(true)}/>
+          <ExactUploadedHeadphones modelRef={modelRef} onReady={()=>setReady(true)}/>
         </Suspense>
+        {upgradeQueued && <Suspense fallback={null}>
+          <UpgradeTo4K modelRef={modelRef} onComplete={()=>setFullQuality(true)}/>
+        </Suspense>}
         <InteractionFramePump/>
         <TrackballControls
           makeDefault
@@ -172,4 +232,4 @@ export default function Headphone360(){
   </main>;
 }
 
-useGLTF.preload(ASSET);
+useGLTF.preload(FAST_ASSET,"/draco/");

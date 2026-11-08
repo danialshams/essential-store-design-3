@@ -28,3 +28,7 @@ npm run build
 ## Scope
 
 The app intentionally shows **only** a 360-degree model; there is no component separation, scroll-based feature presentation, login, or store UI.
+
+## Progressive 360 loading
+
+The first HTML paint shows the small existing still image. Then a 300 KB low-texture version of the **same** 46,640-triangle geometry becomes interactive. The original full-resolution 4K model loads afterwards, upgrading materials and geometry in place without resetting rotation, zoom or controls. The final visual quality is identical to the previous 4K release. The 3D renderer continues to run on demand, not continuously.
