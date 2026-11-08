@@ -6,3 +6,8 @@ node_modules
 .vercel
 *.tsbuildinfo
 .DS_Store
+
+# Licensed external model and local Blender reviews (never publish)
+private-assets/
+build/
+*.blend1
