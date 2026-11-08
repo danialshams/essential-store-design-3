@@ -26,7 +26,7 @@ jobs:
       - name: Install local rendering tools
         run: |
           sudo apt-get update -qq
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends blender python3-pil
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends blender python3-pil python3-numpy
       - name: Rebuild source-faithful alpha-masked GLBs
         run: |
           bash scripts/build-airpods-4k.sh
